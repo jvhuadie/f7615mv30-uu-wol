@@ -1,52 +1,34 @@
-# 机制与固定版本
+# 实现与维护说明
 
-> **历史资料**：以下保留对应阶段的实现和测试记录；其中“当前”“待验收”等描述仅指当时版本。最新支持范围见[项目首页](../README.md)，安装步骤见[使用说明](../INSTALL.txt)，当前结果见[统一版验证记录](../unified/VALIDATION.txt)。F7615 安装完成后必须手动重启。
+## 两型号的启动机制
 
-本项目从一台用户授权导出的 F7615MV30 启动组件中研究自启入口。原始程序、镜像、配置和个人设备标识不在仓库中。
+F7615MV30 使用已验证固件的 `/wlan/wifi_debug.sh` 无线配置回调。回调等待后调用项目控制脚本；参考设备的重启探针曾确认该入口以 root 执行。它并非通用的 rc.local，不能推广至无无线功能或其他固件。全新安装后需手动重启。
 
-v0.4 增加电脑端 Telnet 自动安装与只读状态检查，光猫端安装器、管理与日志脚本保持 v0.3。上传后的脚本须通过 SHA-256 校验才执行，错误认证或非 root 时停止；不自动解锁服务或修改认证。凭据仅用于用户指定的局域网设备，不向 GitHub 或其他服务发送。
+F7005MV3 使用原厂 OSGi 插件生命周期。UU 以普通插件用户运行，仅授予 CAP_NET_RAW；固定用途的 PID 准备程序仅授予 CAP_DAC_OVERRIDE，只创建或校验专用 PID 文件后退出。两份自有程序的 immutable 保护用于防止原厂开机 chown 清除 capability，工具卸载时先解除保护。
 
-## 自启入口依据
+F7005 安装时核对 Andlink 已知版本并检查健康状态：原始版本健康则跳过，明确异常才备份修复，已修复版本只检查健康。未知版本和通信异常停止操作。故障分支完整实机验证仍未完成，不能仅凭模拟测试认定所有设备可用。
 
-在当前样本 `cspd` 中，ARM 地址 `0x103ba0` 附近加载 `/wlan/wifi_debug.sh` 路径，`0x103ba8` 调用 PLT `0x1b528`。通过 ELF `.rel.plt` 解析确认对应函数为 libc `system`。这说明该路径存在执行调用，不只是日志中的字符串。
+## 固件与程序校验
 
-调用位于无线配置处理路径，并非进程启动时无条件执行。随后在设备上新建只记录身份及启动 ID 的探针，正常重启光猫，得到 root 身份且日志启动 ID 与当前启动一致。该结果验证参考样本上的入口；尚未证明所有无线配置场景都能触发。
+型号、架构和固件指纹由 `unified/tools/Profiles.ps1` 统一判断。F7005 额外校验启动脚本；运行资源及修复差分使用固定哈希校验。更改校验值前必须重新完成对应设备验证，不因型号相近而放行。
 
-2026-10-24，该参考样本进一步完成 v0.2 实机验收：重启后插件自动运行，原设备无需重新绑定即恢复在线，手机使用移动数据远程开机成功。完整范围见 [验证记录](VALIDATION.md)。
+UU 为闭源程序。本项目不承诺游戏加速，不自动修改 LAN 或原厂 Java 权限规则，不替用户重启光猫。进程退出及网络规则清理由闭源程序行为影响，不能保证所有故障自动恢复。
 
-原始启动链及 OSGi 环境没有找到可直接套用的 SAF `rc.local`。当前实现不依赖 SAF、不替换 OSGi 镜像。
+## 构建与测试
 
-参考来源：
+在仓库根目录使用 Windows PowerShell 5.1：
 
-- [电信光猫启动软件（SAF 方案，不能直接套用到当前 OSGi 固件）](https://www.right.com.cn/forum/thread-8415314-1-1.html)
-- [UU 远程开机路由器助手（不同平台的启动与验证思路参考，非本项目上游依赖）](https://github.com/coolhpj/uu-remote-wol-router-helper)
-
-本仓库的脚本与 Windows 工具在本次适配中编写，不包含上述项目的发布包或网易闭源程序。
-
-## 指纹
-
-参考 `/bin/cspd` SHA-256：
-
-```text
-58a5a48a3bfb5bd38209ffa58e3fb5b635623d4a2125799cd8e7e897e3a6a58f
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tests/Test-Routing.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tests/Test-Gui.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tests/Test-InstallState.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tests/Test-FrameworkRepair.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tests/Test-ConfigCleanup.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File unified/tools/build_gui.ps1
 ```
 
-固定网易插件渠道：`openwrt-aarch64`；版本：`v14.10.6`。
+构建产物为 `unified/ZteOntUuWol.exe`，运行 `--self-test` 检查内嵌脚本，`--check` 检查界面初始化。这些测试不代替实机重启与远程开机验收。
 
-官方压缩包 SHA-256：
+统一版维护入口在 `unified/`。根目录旧 F7615 脚本与测试仍为兼容实现，不能据其旧版本号判断统一工具版本。原厂导出文件、绑定身份和私有备份不应进入源码或发行包。
 
-```text
-590006073430b2b1ca441615482e4eef2d7bce0cebc455f486a76c9da60569e5
-```
-
-安装器只允许这个已检查的文件，不因下载成功就执行未知版本。程序下载地址内的 `key1`、`key2` 来自网易公开插件接口的 CDN 下载参数，不是用户账号令牌。
-
-## 已知实现边界
-
-- 后台等待 20 秒已在参考样本的本轮完整重启流程中使用并通过验收；没有证明它适合所有网络恢复速度，遇到异常仍需结合日志判断。
-- 没有额外安装永久轮询服务；进程恢复能力依赖网易程序自带 guardian 和后续无线回调，不宣称任意故障都自动修复。
-- 只恢复已确认的本机状态文件 `.sn`、`.uuplugin_uuid` 和 `uu.conf`。
-- v0.3 使用 shell 管道和固定大小的 dd 读取记录轮转 stdout/stderr；两份日志各最多 256 KiB，避免对 UU 本体施加可能触发 SIGXFSZ 的限制。写入失败后继续消费输入；该实现通过本地测试，光猫新版实测待完成。
-- 停止进程不保证清理闭源程序可能添加的全部临时网络规则。
-- 卸载保留私有目录供恢复；重装前需检查保留状态。
-- 不自动更新程序、修改 WAN 配置、启用游戏加速或替用户重启光猫。
+[使用说明](../INSTALL.txt) · [验证记录](../unified/VALIDATION.txt) · [常见问题](TROUBLESHOOTING.md)
