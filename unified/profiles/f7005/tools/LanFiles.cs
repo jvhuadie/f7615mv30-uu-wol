@@ -1,0 +1,9 @@
+using System;using System.Net;using System.Net.Sockets;using System.IO;using System.Text;using System.Threading;using System.Collections.Generic;
+public sealed class F7005Files:IDisposable{
+ readonly TcpListener listener;readonly Thread thread;readonly Dictionary<string,byte[]> files;readonly string peer;volatile bool stop;
+ public readonly int Port;public readonly string Token;
+ public F7005Files(string address,string router,Dictionary<string,byte[]> payload){peer=router;files=payload;Token=Guid.NewGuid().ToString("N");listener=new TcpListener(IPAddress.Parse(address),0);listener.Start();Port=((IPEndPoint)listener.LocalEndpoint).Port;thread=new Thread(Run);thread.IsBackground=true;thread.Start();}
+ void Run(){while(!stop){try{if(!listener.Pending()){Thread.Sleep(50);continue;}using(TcpClient c=listener.AcceptTcpClient()){c.ReceiveTimeout=4000;c.SendTimeout=10000;if(((IPEndPoint)c.Client.RemoteEndPoint).Address.ToString()!=peer)continue;using(NetworkStream stream=c.GetStream()){StringBuilder line=new StringBuilder();int n;while(line.Length<2048&&(n=stream.ReadByte())>=0){if(n==10)break;line.Append((char)n);}string[] parts=line.ToString().Trim().Split(' ');byte[] body=null;string prefix="/"+Token+"/";if(parts.Length==3&&parts[0]=="GET"&&parts[1].StartsWith(prefix,StringComparison.Ordinal))files.TryGetValue(parts[1].Substring(prefix.Length),out body);string status=body==null?"404 Not Found":"200 OK";if(body==null)body=new byte[0];byte[] h=Encoding.ASCII.GetBytes("HTTP/1.0 "+status+"\r\nContent-Length: "+body.Length+"\r\nConnection: close\r\n\r\n");stream.Write(h,0,h.Length);stream.Write(body,0,body.Length);}}}catch{if(stop)return;}}}
+ public void Dispose(){stop=true;listener.Stop();thread.Join(4500);}
+ public static byte[] Hex(string s){if((s.Length&1)!=0)throw new InvalidDataException();byte[] b=new byte[s.Length/2];for(int i=0;i<b.Length;i++)b[i]=Convert.ToByte(s.Substring(i*2,2),16);return b;}
+}

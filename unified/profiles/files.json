@@ -1,0 +1,31 @@
+{
+  "f7615": [
+    "Auto.ps1",
+    "install.sh",
+    "tools/Network.ps1",
+    "tools/Prompts.ps1",
+    "tools/TelnetSession.cs",
+    "tools/Manage.ps1",
+    "src/full-uninstall.sh",
+    "defaults.json"
+  ],
+  "f7005": [
+    "Manage.ps1",
+    "control.sh",
+    "tools/Network.ps1",
+    "tools/TelnetSession.cs",
+    "tools/LanFiles.cs",
+    "payload/service.jar",
+    "payload/manifest.json",
+    "payload/cap-uu-set.template",
+    "payload/cap-pid-set.template",
+    "payload/cap-get.template",
+    "payload/cap-remove.template",
+    "payload/flags-get.template",
+    "payload/flags-lock.template",
+    "payload/flags-unlock.template",
+    "tools/FrameworkRepair.ps1",
+    "tools/framework-repair.sh",
+    "payload/andlink.delta"
+  ]
+}
