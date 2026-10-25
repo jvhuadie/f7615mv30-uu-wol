@@ -10,6 +10,16 @@
 
 > 已正常安装的设备无需重装。更换电脑端 EXE 不会自动修改光猫。F7005 仍是限定固件的适配；不能据此认定所有同型号、运营商版本或其他中兴光猫均受支持。
 
+## 新型号只读检测与资料反馈
+
+未支持的型号或固件可先使用独立检测工具 **v0.5** 收集资料；需要已有 Telnet 权限。采集不安装 UU、不修改光猫、不重启服务。型号线索、来源、架构与固件指纹会在报告顶部显示；检测成功不代表已经适配。
+
+[下载检测工具 EXE](https://github.com/jvhuadie/zte-ont-uu-wol/releases/download/probe-v0.5.0/ZTE-ONT-readonly-v0.5.exe) · [检测工具 Release](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.5.0) · [使用与构建说明](tools/ont-readonly/README.md) · [提交适配资料](https://share.fnnas.net/s/a6cea4a86c714bdf87)
+
+运行后检查 TXT 内容，再通过收集页面上传 ZIP 原文件。**收集网页「请输入您的名字」请填写机身标签上的设备型号，例如 F7005MV3、G7615V2；不要填写姓名，型号不明时填写「型号未知」。** 报告不要发布到公开 Issue。
+
+检测工具独立使用 `probe-v*` 标签发布；UU 安装与管理工具仍使用 `v*` 标签。
+
 ## 支持范围与验收状态
 
 以下结果截至 **2026-10-25**，仅适用于已匹配指纹的参考固件，不代表同型号的所有版本。

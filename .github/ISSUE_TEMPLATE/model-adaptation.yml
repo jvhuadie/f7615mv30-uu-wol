@@ -1,0 +1,38 @@
+name: 新型号适配反馈
+description: 提交产品型号与采集状态；完整报告通过私有收集链接发送
+title: "[适配反馈] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先运行[只读检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.5.0)，检查内容后通过[资料收集页面](https://share.fnnas.net/s/a6cea4a86c714bdf87)上传 ZIP。
+        **网页「请输入您的名字」请填写设备型号，不要填写姓名。** 不确定时填写「型号未知」。
+        此 Issue 为公开内容，请勿附报告、序列号、IP/MAC、账号密码或配置备份。
+  - type: input
+    id: model
+    attributes:
+      label: 机身标签设备型号
+      placeholder: 例如 F7005MV3；不确定请填「型号未知」
+    validations:
+      required: true
+  - type: input
+    id: firmware
+    attributes:
+      label: 软件 / 固件版本（选填）
+      description: 仅填写版本号，不要填写序列号或账号信息。
+  - type: dropdown
+    id: collection
+    attributes:
+      label: 采集状态
+      options:
+        - 完整完成
+        - 部分完成
+        - 未能开始或保存报告
+        - 尚未采集
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述（选填）
+      description: 可描述操作与提示；请勿粘贴完整报告或私有链接。
