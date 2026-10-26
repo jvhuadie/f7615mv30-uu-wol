@@ -59,7 +59,7 @@ try {
     $ptr=[Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($Password)
     try{$script:redactionPassword=[Runtime.InteropServices.Marshal]::PtrToStringUni($ptr)}finally{[Runtime.InteropServices.Marshal]::ZeroFreeGlobalAllocUnicode($ptr)}
     $commands=Get-Content -LiteralPath (Join-Path $PSScriptRoot 'commands.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-    if(-not ('ZteUuInstaller.TelnetSession' -as [type])){Add-Type -Path @((Join-Path $PSScriptRoot 'tools/TelnetSession.cs'),(Join-Path $PSScriptRoot 'tools/BackupTransfer.cs'))}
+    if(-not ('ZteUuInstaller.TelnetSession' -as [type])){Add-Type -Path (Join-Path $PSScriptRoot 'tools/TelnetSession.cs')}
     Write-Host '正在连接并登录；不记录密码或登录会话。'
     $session=New-Object ZteUuInstaller.TelnetSession($RouterAddress.Trim(),$Port,5000)
     $reply=$session.ReadUntil('(?im)(?:login|username)\s*:\s*$|(?:^|\n)[^\n]{0,100}[#$]\s*$',15000)
@@ -105,10 +105,10 @@ $safeLabel=[regex]::Replace($identity.fileLabel,'[^A-Za-z0-9\u4e00-\u9fff_.-]','
 $archLabel=if($identity.architecture){$identity.architecture}else{'架构未知'}
 $name='ZTE-'+$safeLabel+'-'+$archLabel+'-readonly-'+$stamp
 $coverage=[ordered]@{planned=$commands.Count;completed=$sections.Count;interruptedGroup=$interruptedGroup;notCompleted=@($commands | Select-Object -Skip $sections.Count | ForEach-Object {$_.id});warningSections=@($sections | Where-Object {$_.warnings.Count -gt 0}).Count;truncatedSections=@($sections | Where-Object {$_.truncated}).Count;note='COMPLETE 只表示所有分组返回；分组返回码不保证每个子命令成功，未命中和有界输出不证明不存在。'}
-$report=[ordered]@{tool='中兴光猫只读检测 v0.6';schemaVersion=3;collectedAt=[DateTimeOffset]::Now.ToString('o');status=$state;identity=$identity;coverage=$coverage;note='型号线索与用户填写信息分别保留，待核对机身标签；本工具不判断已兼容、不修改设备。地址及常见敏感字段已自动隐藏，发送前仍请检查。';failure=$failure;attempted=$attempted;sections=@($sections.ToArray())}
+$report=[ordered]@{tool='中兴光猫只读检测 v0.6.1';schemaVersion=3;collectedAt=[DateTimeOffset]::Now.ToString('o');status=$state;identity=$identity;coverage=$coverage;note='型号线索与用户填写信息分别保留，待核对机身标签；本工具不判断已兼容、不修改设备。地址及常见敏感字段已自动隐藏，发送前仍请检查。';failure=$failure;attempted=$attempted;sections=@($sections.ToArray())}
 $json=ConvertTo-Json -InputObject $report -Depth 8
 $lines=New-Object Collections.Generic.List[string]
-$lines.Add('中兴光猫只读检测报告 v0.6');$lines.Add('状态：'+$state);$lines.Add((Format-ProbeIdentity $identity));$lines.Add('本报告仅含只读采集结果，不代表 UU 已适配；没有安装、上传脚本、重启或修改光猫。')
+$lines.Add('中兴光猫只读检测报告 v0.6.1');$lines.Add('状态：'+$state);$lines.Add((Format-ProbeIdentity $identity));$lines.Add('本报告仅含只读采集结果，不代表 UU 已适配；没有安装、上传脚本、重启或修改光猫。')
 $lines.Add('未采集账号配置、固件镜像、UU 绑定文件或完整进程命令行。已隐藏常见地址与敏感字段，发送前请自行检查。')
 $lines.Add(('采集覆盖：'+$sections.Count+'/'+$commands.Count+'；有提示分组：'+$coverage.warningSections+'；输出截断：'+$coverage.truncatedSections))
 $lines.Add($coverage.note)

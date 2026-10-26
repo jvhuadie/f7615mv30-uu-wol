@@ -329,9 +329,9 @@
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
-    "id": "backup-read-tools",
-    "title": "备份读取工具及块设备元数据（不读取设备内容）",
-    "command": "for app in tar gzip sha256sum hexdump od file readelf stat find base64 timeout; do echo \"TOOL $app\"; command -v \"$app\" || :; done; busybox --list | grep -E \"^(cat|tar|gzip|sha256sum|hexdump|od|stat|find|base64|timeout)$\"; cat /proc/partitions; ls -l /dev/mtdblock* /dev/mmcblk*; echo BACKUP_READ_TOOLS_DONE",
+    "id": "file-read-tools",
+    "title": "文件读取工具与存储设备元数据（不读取设备内容）",
+    "command": "for app in tar gzip sha256sum hexdump od file readelf stat find base64 timeout; do echo \"TOOL $app\"; command -v \"$app\" || :; done; busybox --list | grep -E \"^(cat|tar|gzip|sha256sum|hexdump|od|stat|find|base64|timeout)$\"; cat /proc/partitions; ls -l /dev/mtdblock* /dev/mmcblk*; echo FILE_READ_TOOLS_DONE",
     "outputLimitChars": 196608,
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },

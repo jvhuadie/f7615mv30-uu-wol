@@ -5,10 +5,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        请先运行[只读检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.6.0)，检查内容后通过[资料收集页面](https://share.fnnas.net/s/a6cea4a86c714bdf87)上传 ZIP。
+        请先运行[只读检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.6.1)，检查内容后通过[资料收集页面](https://share.fnnas.net/s/a6cea4a86c714bdf87)上传 ZIP。
         **网页「请输入您的名字」请填写设备型号，不要填写姓名。** 不确定时填写「型号未知」。
         此 Issue 为公开内容，请勿附报告、序列号、IP/MAC、账号密码或配置备份。
-        完整备份含未脱敏敏感资料，不要上传到资料收集页面；该页面仅收普通检测报告。
   - type: input
     id: model
     attributes:

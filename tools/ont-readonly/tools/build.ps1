@@ -4,11 +4,11 @@ $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (!$OutputPath) {
     $dist = Join-Path $root 'dist'
     $null = [IO.Directory]::CreateDirectory($dist)
-    $OutputPath = Join-Path $dist 'ZTE-ONT-readonly-v0.6.exe'
+    $OutputPath = Join-Path $dist 'ZTE-ONT-readonly-v0.6.1.exe'
 }
 $references = @('System.dll', 'System.Core.dll', 'System.Windows.Forms.dll',
     [System.Management.Automation.PowerShell].Assembly.Location)
-$files = @('Gui.ps1','Collect.ps1','Backup.ps1','commands.json','INSTALL.txt','tools/Network.ps1','tools/Identity.ps1','tools/TelnetSession.cs','tools/BackupTransfer.cs')
+$files = @('Gui.ps1','Collect.ps1','commands.json','INSTALL.txt','tools/Network.ps1','tools/Identity.ps1','tools/TelnetSession.cs')
 $buildRoot = [IO.Path]::GetFullPath((Join-Path ([IO.Path]::GetTempPath()) ('G7615Probe-build-' + [Guid]::NewGuid().ToString('N'))))
 $null = [IO.Directory]::CreateDirectory($buildRoot)
 try {
