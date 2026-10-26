@@ -15,8 +15,8 @@ using System.Windows.Forms;
 public static class GuiLauncher
 {
     private static readonly string[] PayloadFiles = {
-        "Gui.ps1", "Collect.ps1", "commands.json", "INSTALL.txt",
-        "tools/Network.ps1", "tools/Identity.ps1", "tools/TelnetSession.cs"
+        "Gui.ps1", "Collect.ps1", "Backup.ps1", "commands.json", "INSTALL.txt",
+        "tools/Network.ps1", "tools/Identity.ps1", "tools/TelnetSession.cs", "tools/BackupTransfer.cs"
     };
 
     private static string ExtractPayload()

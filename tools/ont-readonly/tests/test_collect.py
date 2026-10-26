@@ -29,14 +29,21 @@ class Endpoint:
       if self.mode=='partial' and len(self.commands)==3:return
       pending_rc=127 if self.mode=='missing' else 0
       body='Name: fixture\nSerial: SENSITIVE-SERIAL\nssid=PRIVATE-WIFI\npassword=bad\n'+SECRET+'\ninet 192.168.1.12 ether aa:bb:cc:dd:ee:ff\ninet6 fe80::abcd:1234\ndate 12:46:12\n::sysinit:/etc/init.d/rcS\nptyp0::sysinit:/bin/shellproxy\nbridge 8000.aabbccddeeff\nboot=/etc/rcS.d\n'
+      body+='PASS="OtherPassword42"\nUSER="PrivateUser42"\nurl=https://HiddenLogin:HiddenPassword@example.invalid/path\nFIRMWARE_VERSION_EVIDENCE=V1.2.3.4\n'
       if pending_rc==0:
        if cmd==COMMANDS[0]['command']:
-        hostname='OpenWrt' if self.mode=='unknown' else 'F7005MV3'
-        body='HOSTNAME='+hostname+'\nARCH=aarch64\nSOFTWARE_VERSION=1.2.3.4\n'+body
+        hostname='OpenWrt' if self.mode=='unknown' else 'G7615V2' if self.mode=='real-line-endings' else 'F7005MV3'
+        version='Sun Feb 4 20:00:49 CST 2024' if self.mode=='real-line-endings' else '1.2.3.4'
+        body='HOSTNAME='+hostname+'\nARCH=aarch64\nSOFTWARE_VERSION='+version+'\n'+body
        if self.mode=='conflict' and cmd==next(x['command'] for x in COMMANDS if x['id']=='model'):
         body='FILE /proc/device-tree/model\nZTE G7615V2\n'+body
        if cmd==next(x['command'] for x in COMMANDS if x['id']=='hooks'):
         body+='a'*64+'  /bin/cspd\n'
+       if self.mode=='real-line-endings' and cmd==next(x['command'] for x in COMMANDS if x['id']=='model'):
+        body='FILE /proc/device-tree/model\nZTE 133\n'+body
+       if self.mode=='oversized' and cmd==COMMANDS[0]['command']:body+='\n'+'A'*196900
+       if self.mode=='limited' and cmd==next(x['command'] for x in COMMANDS if x['id']=='namespace-startup-metadata'):body+='ENTRY_LIMIT_REACHED\n'
+      if self.mode=='real-line-endings':body=body.replace('\n','\r\n')
       c.sendall((text+'\r\n'+m.group(1)+'\r\n'+body.replace('\n','\r\n')+'/ # ').encode())
      else:
       m=re.fullmatch(r'echo (__PROBE_END_[a-f0-9]+__):\$\?',text);assert m,text
@@ -60,7 +67,7 @@ class CollectorTests(unittest.TestCase):
     self.assertEqual(set(z.namelist()),{'report.txt','report.json'})
     for name in z.namelist():
      data=z.read(name)
-     for secret in [SECRET,'SENSITIVE-SERIAL','PRIVATE-WIFI','192.168.1.12','aa:bb:cc:dd:ee:ff','fe80::abcd:1234','8000.aabbccddeeff']:
+     for secret in [SECRET,'SENSITIVE-SERIAL','PRIVATE-WIFI','192.168.1.12','aa:bb:cc:dd:ee:ff','fe80::abcd:1234','8000.aabbccddeeff','OtherPassword42','PrivateUser42','HiddenLogin','HiddenPassword']:
       self.assertNotIn(secret.encode(),data)
     report=json.loads(z.read('report.json').decode('utf-8-sig'))
     text=z.read('report.txt').decode('utf-8-sig')
@@ -72,12 +79,26 @@ class CollectorTests(unittest.TestCase):
  def test_missing_command_still_exports_warning_results(self):
   obj,report,_=self.perform('missing');self.assertEqual(obj['State'],'COMPLETE');self.assertTrue(all(s['exitCode']==127 for s in report['sections']))
   self.assertEqual(report['identity']['status'],'UNKNOWN');self.assertIn('型号未知',obj['Zip'])
+  self.assertEqual(report['coverage']['warningSections'],len(COMMANDS))
+ def test_repeated_carriage_returns_and_board_build_time(self):
+  _,report,_=self.perform('real-line-endings');i=report['identity']
+  self.assertEqual(i['model'],'G7615V2');self.assertEqual(i['boardModel'],'ZTE 133')
+  self.assertEqual(i['systemBuildTime'],'Sun Feb 4 20:00:49 CST 2024');self.assertEqual(i['softwareVersion'],'')
+ def test_section_output_limit_is_visible_in_coverage(self):
+  _,report,_=self.perform('oversized')
+  self.assertEqual(report['coverage']['truncatedSections'],1)
+  self.assertIn('OUTPUT_LIMIT_REACHED',report['sections'][0]['warnings'])
+ def test_entry_limit_is_not_reported_as_absence(self):
+  _,report,_=self.perform('limited')
+  section=next(x for x in report['sections'] if x['id']=='namespace-startup-metadata')
+  self.assertIn('ENTRY_LIMIT_REACHED',section['warnings'])
  def test_identity_summary_filename_and_dotted_version(self):
   obj,report,_=self.perform('ok');i=report['identity']
   self.assertEqual(i['model'],'F7005MV3');self.assertEqual(i['status'],'CANDIDATE')
   self.assertEqual(i['softwareVersion'],'1.2.3.4');self.assertEqual(i['architecture'],'aarch64')
   self.assertEqual(i['firmwareFingerprint'],'a'*64);self.assertIn('uname -n',i['candidates'][0]['source'])
   self.assertIn('ZTE-F7005MV3-aarch64-readonly-',obj['Zip'])
+  self.assertIn('FIRMWARE_VERSION_EVIDENCE=V1.2.3.4',report['sections'][0]['output'])
  def test_conflicting_sources_are_not_silently_selected(self):
   obj,report,_=self.perform('conflict');i=report['identity']
   self.assertEqual(i['status'],'CONFLICT');self.assertEqual(i['model'],'');self.assertEqual(len(i['candidates']),2);self.assertIn('型号冲突',obj['Zip'])
@@ -91,6 +112,7 @@ class CollectorTests(unittest.TestCase):
   obj,report,commands=self.perform('login-failed');self.assertEqual(obj['State'],'FAILED');self.assertEqual(commands,[]);self.assertEqual(report['sections'],[])
  def test_disconnect_keeps_redacted_partial_report(self):
   obj,report,commands=self.perform('partial');self.assertEqual(obj['State'],'PARTIAL');self.assertEqual(len(report['sections']),2);self.assertEqual(len(commands),3)
+  self.assertEqual(report['coverage']['interruptedGroup'],COMMANDS[2]['id']);self.assertEqual(len(report['coverage']['notCompleted']),len(COMMANDS)-2)
  def test_command_allowlist_has_no_mutations_or_sensitive_config_reads(self):
   for row in COMMANDS:
    self.assertLess(len(row['command']),1800)

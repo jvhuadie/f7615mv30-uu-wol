@@ -21,3 +21,7 @@ defaults.local.json
 UuWol.exe
 
 ZteOntUuWol.exe
+
+# Private full-backup output must never enter source control.
+PRIVATE-full-backup-*/
+filesystem.tar

@@ -34,5 +34,9 @@ class HintsTests(unittest.TestCase):
   for key,cmd in ROWS.items():
    r=subprocess.run([str(BB),'sh','-n','-c',cmd],capture_output=True,timeout=5)
    self.assertEqual(r.returncode,0,(key,r.stderr))
+ def test_lxc_fields_exclude_environment_and_hook_commands(self):
+  data=b'lxc.rootfs.path = dir:/opt/cu/apps/test\nlxc.start.auto = 1\nlxc.environment = password=PRIVATE\nlxc.hook.pre-start = /root/PRIVATE.sh\n'
+  out=self.run_fixture('cu-lxc-fields',data,['/etc/lxc/default.conf'])
+  self.assertIn('lxc.rootfs.path',out);self.assertIn('lxc.start.auto',out);self.assertNotIn('PRIVATE',out)
 
 if __name__=='__main__':unittest.main()

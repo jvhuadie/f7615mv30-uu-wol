@@ -11,7 +11,7 @@ using System.Threading;
 namespace ZteUuInstaller
 {
     // Minimal NVT client. No transcript, credentials or received text is logged.
-    public sealed class TelnetSession : IDisposable
+    public sealed partial class TelnetSession : IDisposable
     {
         private TcpClient client;
         private NetworkStream stream;
@@ -175,10 +175,16 @@ namespace ZteUuInstaller
 
         public string ReadUntil(string pattern, int timeoutMs)
         {
+            return ReadUntilCancelable(pattern, timeoutMs, CancellationToken.None);
+        }
+
+        public string ReadUntilCancelable(string pattern, int timeoutMs, CancellationToken cancellation)
+        {
             Regex regex = new Regex(pattern, RegexOptions.Multiline, TimeSpan.FromSeconds(1));
             Stopwatch watch = Stopwatch.StartNew();
             while (watch.ElapsedMilliseconds < timeoutMs)
             {
+                cancellation.ThrowIfCancellationRequested();
                 Match match = regex.Match(pending.ToString());
                 if (match.Success)
                 {

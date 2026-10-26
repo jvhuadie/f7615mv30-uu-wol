@@ -2,136 +2,344 @@
   {
     "id": "identity-fields",
     "title": "设备身份摘要字段",
-    "command": "printf 'HOSTNAME='; uname -n; printf 'ARCH='; uname -m; if [ -f /etc/version ]; then printf 'SOFTWARE_VERSION='; sed -n '1p' /etc/version; fi"
+    "command": "printf 'HOSTNAME='; uname -n; printf 'ARCH='; uname -m; if [ -f /etc/version ]; then printf 'SOFTWARE_VERSION='; sed -n '1p' /etc/version; fi",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "identity",
     "title": "系统与权限",
-    "command": "id -u; uname -a; uname -m; date; cat /proc/uptime"
+    "command": "id -u; uname -a; uname -m; date; cat /proc/uptime",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "model",
     "title": "型号与版本",
-    "command": "for f in /proc/device-tree/model /etc/os-release /etc/version; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,60p\" \"$f\"; fi; done"
+    "command": "for f in /proc/device-tree/model /etc/os-release /etc/version; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,60p\" \"$f\"; fi; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "cpu",
     "title": "CPU 与内存",
-    "command": "cat /proc/cpuinfo; cat /proc/meminfo"
+    "command": "cat /proc/cpuinfo; cat /proc/meminfo",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "storage",
     "title": "挂载与可写分区",
-    "command": "cat /proc/mounts; df -k; cat /proc/mtd"
+    "command": "cat /proc/mounts; df -k; cat /proc/mtd",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "runtime",
     "title": "运行库与工具",
-    "command": "ls -l /lib/ld* /lib/libc* /lib/libuClibc* /dev/net/tun; for app in sh busybox curl wget ip ifconfig route brctl iptables nft sha256sum tar dd wc sed awk readlink setsid nohup saf lxc-attach lxc-start; do echo \"TOOL $app\"; which \"$app\" 2>/dev/null || :; done"
+    "command": "ls -l /lib/ld* /lib/libc* /lib/libuClibc* /dev/net/tun; for app in sh busybox curl wget ip ifconfig route brctl iptables nft sha256sum tar dd wc sed awk readlink setsid nohup saf lxc-attach lxc-start; do echo \"TOOL $app\"; which \"$app\" 2>/dev/null || :; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "interfaces",
     "title": "网络接口（地址自动隐藏）",
-    "command": "ip -4 addr show; ip -4 route show; ip rule show; brctl show; cat /proc/net/dev"
+    "command": "ip -4 addr show; ip -4 route show; ip rule show; brctl show; cat /proc/net/dev",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "network-fallback",
     "title": "网络备用信息（地址自动隐藏）",
-    "command": "ifconfig -a; route -n; ls -l /sys/class/net"
+    "command": "ifconfig -a; route -n; ls -l /sys/class/net",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "init",
     "title": "启动入口",
-    "command": "for f in /etc/inittab /etc/rcS /etc/init.d/rcS /etc/rc.local /etc/default/S01userconfig; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,160p\" \"$f\"; fi; done"
+    "command": "for f in /etc/inittab /etc/rcS /etc/init.d/rcS /etc/default/S01userconfig; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,160p\" \"$f\"; fi; done; for f in /etc/rc.local; do [ -f \"$f\" ] || continue; echo \"STARTUP_METADATA $f\"; ls -l \"$f\"; wc -l \"$f\"; sha256sum \"$f\"; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "init-list",
     "title": "启动脚本目录",
-    "command": "ls -la /etc/rcS.d /etc/default /etc/init.d; ls -ld /usr/plugin /usr/tmp /usr/java /wlan /userconfig /usr/local/ct /saf /usr/local/saf /vasdocker /run /var/run"
+    "command": "ls -la /etc/rcS.d /etc/default /etc/init.d; ls -ld /usr/plugin /usr/tmp /usr/java /wlan /userconfig /usr/local/ct /saf /usr/local/saf /vasdocker /run /var/run",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "hooks",
     "title": "候选入口与组件（只看元数据）",
-    "command": "ls -l /wlan/wifi_debug.sh /etc/rc.local /usr/tmp/osgi.img /bin/pc /bin/cspd; for f in /bin/pc /bin/cspd; do if [ -f \"$f\" ]; then sha256sum \"$f\"; fi; done"
+    "command": "ls -l /wlan/wifi_debug.sh /etc/rc.local /usr/tmp/osgi.img /bin/pc /bin/cspd; for f in /bin/pc /bin/cspd; do if [ -f \"$f\" ]; then sha256sum \"$f\"; fi; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "processes",
     "title": "进程名称（不读取命令行）",
-    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^State:/p; /^PPid:/p\" \"$p/status\"; done"
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^State:/p; /^PPid:/p\" \"$p/status\"; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "existing-uu",
     "title": "已有 UU 安装与日志元数据",
-    "command": "ls -ld /usr/plugin/uu-wol-f7615 /usr/plugin/uu-wol-backup /tmp/uu /tmp/uu-f7615-start.lock; ls -l /tmp/uu-f7615-service.log /tmp/uu-f7615-service.log.previous /tmp/uu-f7615-boot.log; for p in /proc/[0-9]*; do e=$(readlink \"$p/exe\" 2>/dev/null) || continue; case \"$e\" in *uuplugin*|*xuplugin-guardian*) echo \"PID ${p##*/} EXE $e\"; ls -l \"$p/fd/1\" \"$p/fd/2\" ;; esac; done"
+    "command": "ls -ld /usr/plugin/uu-wol-f7615 /usr/plugin/uu-wol-backup /tmp/uu /tmp/uu-f7615-start.lock; ls -l /tmp/uu-f7615-service.log /tmp/uu-f7615-service.log.previous /tmp/uu-f7615-boot.log; for p in /proc/[0-9]*; do e=$(readlink \"$p/exe\" 2>/dev/null) || continue; case \"$e\" in *uuplugin*|*xuplugin-guardian*) echo \"PID ${p##*/} EXE $e\"; ls -l \"$p/fd/1\" \"$p/fd/2\" ;; esac; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "boot-details",
     "title": "网络及驱动启动脚本（只读）",
-    "command": "for f in /etc/rcS.d/S02wlan /etc/rcS.d/S30network /etc/rcS.d/S43BSPDriver /etc/rcS.d/S45BSP_power_and_driver_cap /etc/rcS.d/S99modules /etc/default/S01userconfig; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,400p\" \"$f\"; fi; done"
+    "command": "for f in /etc/rcS.d/S02wlan /etc/rcS.d/S30network /etc/rcS.d/S43BSPDriver /etc/rcS.d/S45BSP_power_and_driver_cap /etc/rcS.d/S99modules /etc/default/S01userconfig; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n \"1,400p\" \"$f\"; fi; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "callback-hints",
     "title": "候选回调引用（只检测字符串，不执行）",
-    "command": "ls -l /lib/*wlan* /lib/*wifi*; for f in /bin/cspd /bin/pc /lib/*wlan* /lib/*wifi* /lib/libcmapi.so; do [ -f \"$f\" ] || continue; for word in wifi_debug.sh /wlan/ rc.local; do if grep -aqF \"$word\" \"$f\"; then echo \"REFERENCE $f $word\"; fi; done; done; echo CALLBACK_SCAN_DONE"
+    "command": "ls -l /lib/*wlan* /lib/*wifi*; for f in /bin/cspd /bin/pc /lib/*wlan* /lib/*wifi* /lib/libcmapi.so; do [ -f \"$f\" ] || continue; for word in wifi_debug.sh /wlan/ rc.local; do if grep -aqF \"$word\" \"$f\"; then echo \"REFERENCE $f $word\"; fi; done; done; echo CALLBACK_SCAN_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "boot-tail",
     "title": "主启动脚本后续内容（不执行）",
-    "command": "wc -l /etc/init.d/rcS; sed -n \"161,1000p\" /etc/init.d/rcS"
+    "command": "wc -l /etc/init.d/rcS; sed -n \"161,1000p\" /etc/init.d/rcS",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "boot-service-scripts",
     "title": "原厂服务启动脚本（不执行）",
-    "command": "for f in /etc/rcS.d/S*; do [ -f \"$f\" ] || continue; case \"$f\" in */S02wlan|*/S30network|*/S43BSPDriver|*/S45BSP_power_and_driver_cap|*/S99modules) continue ;; esac; echo \"FILE $f\"; wc -l \"$f\"; sed -n \"1,240p\" \"$f\"; done"
+    "command": "for f in /etc/rcS.d/S*; do [ -f \"$f\" ] || continue; case \"$f\" in */S02wlan|*/S30network|*/S43BSPDriver|*/S45BSP_power_and_driver_cap|*/S99modules) continue ;; esac; echo \"FILE $f\"; wc -l \"$f\"; sed -n \"1,240p\" \"$f\"; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "plugin-layout",
     "title": "插件与 Java 目录元数据（不读配置内容）",
-    "command": "for d in /usr/java /usr/java/bin /usr/java/etc /usr/java/conf /usr/java/configuration /usr/java/bundle /usr/java/bundles /usr/java/felix /usr/plugin /usr/plugin/aosnet /usr/plugin/bvasPlug /usr/local/ct /var/felix-temp; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,100p\"; done"
+    "command": "for d in /usr/java /usr/java/bin /usr/java/etc /usr/java/conf /usr/java/configuration /usr/java/bundle /usr/java/bundles /usr/java/felix /usr/plugin /usr/plugin/aosnet /usr/plugin/bvasPlug /usr/local/ct /var/felix-temp; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,100p\"; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "plugin-launchers",
     "title": "Java 启动脚本（不执行）",
-    "command": "for f in /usr/java/*.sh /usr/java/bin/*.sh /usr/java/felix/*.sh; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; wc -l \"$f\"; sed -n \"1,200p\" \"$f\"; done; echo JAVA_SCRIPT_SCAN_DONE"
+    "command": "for f in /usr/java/*.sh /usr/java/bin/*.sh /usr/java/felix/*.sh; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; wc -l \"$f\"; sed -n \"1,200p\" \"$f\"; done; echo JAVA_SCRIPT_SCAN_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "service-path-hints",
     "title": "服务二进制中的启动路径引用（不执行）",
-    "command": "for f in /bin/pc /bin/osgid /sbin/osgid /usr/bin/osgid /bin/cspd; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sha256sum \"$f\"; LC_ALL=C grep -aoE \"/(etc|usr/java|usr/plugin|usr/local/ct|var)/[A-Za-z0-9_./-]{1,160}\" \"$f\" | sed -n \"1,160p\"; done; echo PATH_SCAN_DONE"
+    "command": "for f in /bin/pc /bin/osgid /sbin/osgid /usr/bin/osgid /bin/cspd; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sha256sum \"$f\"; LC_ALL=C grep -aoE \"/(etc|usr/java|usr/plugin|usr/local/ct|var)/[A-Za-z0-9_./-]{1,160}\" \"$f\" | sed -n \"1,160p\"; done; echo PATH_SCAN_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "service-identity",
     "title": "插件服务权限及可执行文件（不读命令行）",
-    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(java|osgid|pc|crond)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p\" \"$p/status\"; readlink \"$p/exe\"; readlink \"$p/cwd\"; fi; done; echo SERVICE_IDENTITY_DONE"
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(java|osgid|pc|crond)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p\" \"$p/status\"; readlink \"$p/exe\"; readlink \"$p/cwd\"; fi; done; echo SERVICE_IDENTITY_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "scheduler-metadata",
     "title": "调度器与候选目录元数据（不读取任务内容）",
-    "command": "for app in crond crontab run-parts; do echo \"TOOL $app\"; which \"$app\" 2>/dev/null || :; done; ls -ld /etc/crontabs /etc/cron.d /var/spool/cron /var/spool/cron/crontabs /etc/rc.local /usr/plugin/zte-f7005-boot-probe /wlan/wifi_debug.sh; echo SCHEDULER_SCAN_DONE"
+    "command": "for app in crond crontab run-parts; do echo \"TOOL $app\"; which \"$app\" 2>/dev/null || :; done; ls -ld /etc/crontabs /etc/cron.d /var/spool/cron /var/spool/cron/crontabs /etc/rc.local /usr/plugin/zte-f7005-boot-probe /wlan/wifi_debug.sh; echo SCHEDULER_SCAN_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "plugin-autoload-properties",
     "title": "Felix 启动设置白名单（只读原厂框架文件）",
-    "command": "for f in /usr/java/conf/config.properties /usr/java/conf/config_chongqinggd.properties; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; awk '/^[[:space:]]*(felix\\.auto\\.(deploy\\.(dir|action)|start\\.[0-9]+|install\\.[0-9]+)|felix\\.startlevel\\.bundle|felix\\.cache\\.rootdir|org\\.osgi\\.framework\\.(storage|startlevel\\.beginning))[[:space:]]*[=:]/ {print; next} /^[[:space:]]*(felix\\.auto\\.|org\\.osgi\\.framework\\.storage|felix\\.cache\\.rootdir)/ {print \"OTHER_FRAMEWORK_KEY_PRESENT\"}' \"$f\"; done; echo FRAMEWORK_PROPERTIES_DONE"
+    "command": "for f in /usr/java/conf/config.properties /usr/java/conf/config_chongqinggd.properties; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; awk '/^[[:space:]]*(felix\\.auto\\.(deploy\\.(dir|action)|start\\.[0-9]+|install\\.[0-9]+)|felix\\.startlevel\\.bundle|felix\\.cache\\.rootdir|org\\.osgi\\.framework\\.(storage|startlevel\\.beginning))[[:space:]]*[=:]/ {print; next} /^[[:space:]]*(felix\\.auto\\.|org\\.osgi\\.framework\\.storage|felix\\.cache\\.rootdir)/ {print \"OTHER_FRAMEWORK_KEY_PRESENT\"}' \"$f\"; done; echo FRAMEWORK_PROPERTIES_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "plugin-catalog-metadata",
     "title": "插件目录与预置清单元数据（不读取缓存内容）",
-    "command": "for d in /usr/plugin/bdl /usr/plugin/bundlecache /usr/plugin/bundlecache/bundle0 /usr/java/regionconf /usr/plugin/hangyan /usr/plugin/BZ_sh /etc/BZ_sh; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,100p\"; done; ls -l /usr/plugin/bundlecache/prebundle /usr/java/regionconf/prebundle.default; echo CATALOG_METADATA_DONE"
+    "command": "for d in /usr/plugin/bdl /usr/plugin/bundlecache /usr/plugin/bundlecache/bundle0 /usr/java/regionconf /usr/plugin/hangyan /usr/plugin/BZ_sh /etc/BZ_sh; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,100p\"; done; ls -l /usr/plugin/bundlecache/prebundle /usr/java/regionconf/prebundle.default; echo CATALOG_METADATA_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "native-plugin-start-hints",
     "title": "原生服务的插件启动字符串（只读）",
-    "command": "for f in /bin/osgid /bin/pc /bin/cspd; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE '[ -~]{6,}' \"$f\" | grep -E 'hangyan/|BZ_sh/|felix[.]|prebundle|bundlelist|/usr/java/bin/java|/usr/plugin/bdl|osgi.*(start|exec)|crond|rc[.]local' | sed -n \"1,180p\"; done; echo NATIVE_START_HINTS_DONE"
+    "command": "for f in /bin/osgid /bin/pc /bin/cspd; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE '[ -~]{6,}' \"$f\" | grep -E 'hangyan/|BZ_sh/|felix[.]|prebundle|bundlelist|/usr/java/bin/java|/usr/plugin/bdl|osgi.*(start|exec)|crond|rc[.]local' | sed -n \"1,180p\"; done; echo NATIVE_START_HINTS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "native-script-paths",
     "title": "可写插件目录的脚本路径引用（只读）",
-    "command": "for f in /bin/cspd /bin/osgid /bin/pc; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE '/usr/plugin/[A-Za-z0-9_./-]{1,160}' \"$f\" | grep -E '\\.sh$|/bin/|/start|/run|/init|/exec' | sed -n \"1,200p\"; done; echo SCRIPT_PATHS_DONE"
+    "command": "for f in /bin/cspd /bin/osgid /bin/pc; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE '/usr/plugin/[A-Za-z0-9_./-]{1,160}' \"$f\" | grep -E '\\.sh$|/bin/|/start|/run|/init|/exec' | sed -n \"1,200p\"; done; echo SCRIPT_PATHS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
   {
     "id": "busybox-scheduler-check",
     "title": "BusyBox 内置调度命令检测（不启动服务）",
-    "command": "busybox --list | grep -E '^(crond|crontab|run-parts|od|hexdump|base64|strings)$'; echo BUSYBOX_APPLET_SCAN_DONE"
+    "command": "busybox --list | grep -E '^(crond|crontab|run-parts|od|hexdump|base64|strings)$'; echo BUSYBOX_APPLET_SCAN_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "cu-layout",
+    "title": "CU/UPT 框架与应用目录（仅元数据）",
+    "command": "for d in /opt/cu /opt/cu/framework /opt/cu/framework/bin /opt/cu/framework/sbin /opt/cu/framework/usr /opt/cu/framework/usr/bin /opt/cu/framework/usr/sbin /opt/cu/framework/etc /opt/cu/framework/etc/init.d /opt/cu/apps /opt/upt /opt/upt/framework /opt/upt/apps /usr/pre_plugin /usr/sbin /etc/lxc /var/lib/lxc; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,70p\"; done; echo CU_LAYOUT_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "cu-entrypoints",
+    "title": "SAF 与框架程序位置和指纹（不执行候选程序）",
+    "command": "for app in saf ufwmg procd ubusd hpsrv uappd lxc-start lxc-attach; do echo \"TOOL $app\"; command -v \"$app\" || :; done; for f in /bin/saf /sbin/saf /usr/bin/saf /usr/sbin/saf /usr/sbin/ufwmg /opt/cu/framework/bin/saf /opt/cu/framework/sbin/saf /opt/cu/framework/usr/bin/saf /opt/cu/framework/usr/sbin/saf /opt/cu/framework/usr/sbin/ufwmg /opt/upt/framework/bin/saf /opt/upt/framework/sbin/saf; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; ls -l \"$f\"; readlink \"$f\" || :; sha256sum \"$f\"; done; echo CU_ENTRYPOINTS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "cu-init-scripts",
+    "title": "框架固定启动脚本（只读，不执行）",
+    "command": "for f in /etc/init.d/dbus-rcS /etc/default/rcS /opt/cu/framework/etc/inittab /opt/cu/framework/etc/init.d/rcS /opt/cu/framework/etc/init.d/ufwmg /opt/cu/framework/etc/init.d/boot /opt/upt/framework/etc/inittab ; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; wc -l \"$f\"; sed -n \"1,200p\" \"$f\"; done; echo CU_INIT_SCRIPTS_DONE; for f in /opt/cu/framework/etc/rc.local /opt/upt/framework/etc/rc.local; do [ -f \"$f\" ] || continue; echo \"STARTUP_METADATA $f\"; ls -l \"$f\"; wc -l \"$f\"; sha256sum \"$f\"; done",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "container-processes",
+    "title": "框架进程权限、根目录与命名空间（不读命令行）",
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(saf|ufwmg|procd|ubusd|hpsrv|uappd|init[.]lxc|cuinform)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^NoNewPrivs:/p\" \"$p/status\"; for n in exe cwd root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; fi; done; echo CONTAINER_PROCESSES_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "container-startup-metadata",
+    "title": "各框架进程可见的自启文件（仅元数据）",
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(saf|ufwmg|procd|hpsrv|uappd|init[.]lxc)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; for n in etc/rc.local etc/inittab etc/init.d/rcS root/run.sh etc/rc.d etc/init.d opt/cu/apps; do f=\"$p/root/$n\"; if [ -e \"$f\" ]; then echo \"ROOT_PATH $n\"; ls -ld \"$f\"; if [ -f \"$f\" ]; then sha256sum \"$f\"; wc -l \"$f\"; fi; fi; done; fi; done; echo CONTAINER_STARTUP_METADATA_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "cu-lxc-fields",
+    "title": "LXC 根目录与自启设置白名单（不读环境变量或凭据）",
+    "command": "count=0; for f in /etc/lxc/default.conf /var/lib/lxc/*/config /opt/cu/apps/*/config /opt/cu/apps/*/lxc.conf /opt/cu/framework/etc/lxc/default.conf; do [ -f \"$f\" ] || continue; count=$((count+1)); [ \"$count\" -le 24 ] || break; echo \"FILE $f\"; awk '/^[[:space:]]*lxc[.](rootfs([.](path|mount))?|start[.](auto|delay|order)|mount[.]auto)[[:space:]]*=/ {print}' \"$f\" | sed -n \"1,60p\"; done; echo CU_LXC_FIELDS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "runtime-elf-headers",
+    "title": "宿主与框架程序 ELF 头（仅读取前 64 字节）",
+    "command": "for f in /bin/busybox /bin/cspd /lib/ld-linux.so.3 /lib/ld-linux-aarch64.so.1 /usr/sbin/ufwmg /opt/cu/framework/bin/busybox /opt/cu/framework/sbin/procd /opt/cu/framework/usr/sbin/ufwmg; do [ -f \"$f\" ] || continue; echo \"ELF_HEADER $f\"; busybox hexdump -v -n 64 -e '1/1 \"%02x\"' \"$f\"; echo; done; echo ELF_HEADERS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "cu-native-hints",
+    "title": "框架入口与启动路径字符串（不执行程序）",
+    "command": "for f in /usr/sbin/ufwmg /opt/cu/framework/usr/sbin/ufwmg /opt/cu/framework/bin/saf /opt/cu/framework/sbin/saf /bin/pc; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE '/(opt/cu|opt/upt|etc/init[.]d|etc/lxc|var/lib/lxc|etc/rc[.]local)/?[A-Za-z0-9_./-]{0,140}' \"$f\" | sed -n \"1,100p\"; done; echo CU_NATIVE_HINTS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "policy-default-routes",
+    "title": "策略路由表中的默认路由（地址脱敏，不发网络请求）",
+    "command": "ip -4 route show table all | grep -E '(^|[[:space:]])default([[:space:]]|$)' | sed -n \"1,60p\"; echo POLICY_DEFAULT_ROUTES_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "firmware-version-fields",
+    "title": "明确系统版本文件（不读取账号配置）",
+    "command": "for f in /etc/version /etc/versioncode /etc/ver_num_des; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sed -n \"1,8s/^/FIRMWARE_VERSION_EVIDENCE=/p\" \"$f\"; done; echo VERSION_FIELDS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "platform-identifiers",
+    "title": "板型、设备树与明确硬件字段",
+    "command": "for f in /proc/csp/boardtype /proc/device-tree/model /sys/firmware/devicetree/base/model; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sed -n \"1,8p\" \"$f\"; echo; done; for f in /proc/device-tree/compatible /sys/firmware/devicetree/base/compatible; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; tr \"\\000\" \"\\n\" < \"$f\" | sed -n \"1,20p\"; done; if [ -f /proc/capability/boardtype ]; then echo \"FILE /proc/capability/boardtype (field whitelist)\"; grep -iE \"^[[:space:]]*(vid|board|boardtype|chip|chipset|model|hardware)[[:space:]:=]\" /proc/capability/boardtype | sed -n \"1,30p\"; fi; echo PLATFORM_IDENTIFIERS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "distribution-release",
+    "title": "系统发行版本白名单",
+    "command": "for f in /etc/os-release /usr/lib/os-release /etc/openwrt_release /etc/lsb-release; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; grep -E \"^(NAME|ID|PRETTY_NAME|VERSION|VERSION_ID|BUILD_ID|DISTRIB_ID|DISTRIB_RELEASE|DISTRIB_REVISION|DISTRIB_TARGET|DISTRIB_ARCH|DISTRIB_DESCRIPTION)=\" \"$f\" | sed -n \"1,40p\"; done; echo DISTRIBUTION_RELEASE_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "runtime-library-metadata",
+    "title": "标准运行库目录与加载器（仅元数据）",
+    "command": "for d in /lib /lib64 /usr/lib /usr/lib64 /opt/cu/framework/lib /opt/cu/framework/lib64; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,200p\"; done; echo LIBRARY_METADATA_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "native-abi-hints",
+    "title": "二进制加载器路径引用（不执行目标）",
+    "command": "for f in /bin/busybox /bin/cspd /bin/pc /usr/sbin/ufwmg; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; LC_ALL=C grep -aoE \"/(lib|lib64)/[A-Za-z0-9_./+-]{1,100}\" \"$f\" | sed -n \"1,24p\"; done; echo ABI_HINTS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "init-system-metadata",
+    "title": "常见 init 与服务管理目录（仅元数据）",
+    "command": "for app in systemctl openrc rc-service rc-update procd ubus supervisorctl docker podman ctr runc; do echo \"TOOL $app\"; command -v \"$app\" || :; done; for d in /etc/rc.d /etc/init.d /etc/rcS.d /etc/systemd/system /usr/lib/systemd/system /etc/runlevels /etc/supervisor.d /etc/supervisor/conf.d; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,100p\"; done; echo INIT_SYSTEM_METADATA_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "persistent-app-metadata",
+    "title": "常见持久化与应用根目录（仅元数据）",
+    "command": "for d in /opt /opt/apps /opt/upt/apps /opt/cu/apps /usr/plugin /usr/pre_plugin /data /overlay /rom /jffs /jffs/scripts /etc/storage /etc/persistent /var/lib/lxc /var/lib/docker /var/lib/containers; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,70p\"; done; echo PERSISTENT_METADATA_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "user-process-context",
+    "title": "用户态进程权限与命名空间（不读参数或环境变量）",
+    "command": "count=0; for p in /proc/[0-9]*; do [ -r \"$p/status\" ] && [ -e \"$p/exe\" ] || continue; count=$((count+1)); if [ \"$count\" -gt 160 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^NoNewPrivs:/p; /^Seccomp:/p\" \"$p/status\"; for n in exe root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; done; echo PROCESS_CONTEXT_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "namespace-startup-metadata",
+    "title": "不同挂载命名空间中的启动入口（仅元数据）",
+    "command": "seen=\" \"; count=0; for p in /proc/[0-9]*; do [ -e \"$p/exe\" ] || continue; ns=$(readlink \"$p/ns/mnt\") || continue; case \"$seen\" in *\" $ns \"*) continue ;; esac; seen=\"$seen$ns \"; count=$((count+1)); if [ \"$count\" -gt 16 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"NAMESPACE $ns PID ${p##*/}\"; for n in etc/rc.local etc/inittab etc/init.d/rcS root/run.sh etc/rc.d etc/init.d etc/systemd/system; do f=\"$p/root/$n\"; [ -e \"$f\" ] || continue; echo \"ROOT_PATH $n\"; ls -ld \"$f\"; if [ -f \"$f\" ]; then sha256sum \"$f\"; wc -l \"$f\"; fi; done; if [ -d \"$p/root/etc/rc.d\" ]; then echo ENABLED_RC_LINKS; ls -la \"$p/root/etc/rc.d\" | sed -n \"1,80p\"; fi; done; echo NAMESPACE_STARTUP_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "namespace-root-mounts",
+    "title": "不同命名空间的根与持久化挂载",
+    "command": "seen=\" \"; count=0; for p in /proc/[0-9]*; do [ -e \"$p/exe\" ] || continue; ns=$(readlink \"$p/ns/mnt\") || continue; case \"$seen\" in *\" $ns \"*) continue ;; esac; seen=\"$seen$ns \"; count=$((count+1)); if [ \"$count\" -gt 16 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"NAMESPACE $ns PID ${p##*/}\"; awk '$5==\"/\" || $5==\"/etc\" || $5==\"/root\" || $5==\"/opt/cu/apps\" || $5==\"/opt/upt/apps\" || $5==\"/usr/plugin\" || $5==\"/overlay\" {print}' \"$p/mountinfo\" | sed -n \"1,40p\"; done; echo NAMESPACE_ROOT_MOUNTS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "kernel-feature-whitelist",
+    "title": "内核运行能力白名单与 cgroup 元数据",
+    "command": "cat /proc/filesystems; for f in /proc/sys/kernel/cap_last_cap /proc/sys/kernel/unprivileged_userns_clone /proc/sys/net/ipv4/ip_forward /proc/net/ip_tables_names /proc/self/cgroup; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sed -n \"1,30p\" \"$f\"; done; for d in /sys/fs/cgroup /sys/class/mtd /sys/block; do echo \"DIR $d\"; ls -la \"$d\" | sed -n \"1,80p\"; done; echo KERNEL_FEATURES_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "backup-read-tools",
+    "title": "备份读取工具及块设备元数据（不读取设备内容）",
+    "command": "for app in tar gzip sha256sum hexdump od file readelf stat find base64 timeout; do echo \"TOOL $app\"; command -v \"$app\" || :; done; busybox --list | grep -E \"^(cat|tar|gzip|sha256sum|hexdump|od|stat|find|base64|timeout)$\"; cat /proc/partitions; ls -l /dev/mtdblock* /dev/mmcblk*; echo BACKUP_READ_TOOLS_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "network-environment-metadata",
+    "title": "DNS 配置存在性与网络控制工具",
+    "command": "for app in curl wget nslookup ping ip iptables ip6tables nft; do echo \"TOOL $app\"; command -v \"$app\" || :; done; for f in /etc/resolv.conf /var/tmp/resolv.conf /tmp/resolv.conf /tmp/resolv.conf.auto; do [ -e \"$f\" ] || continue; echo \"FILE $f\"; ls -l \"$f\"; awk '/^[[:space:]]*nameserver[[:space:]]/ {n++} END {print \"NAMESERVER_ENTRY_COUNT=\" n+0}' \"$f\"; done; echo NETWORK_ENVIRONMENT_DONE",
+    "outputLimitChars": 196608,
+    "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   }
 ]
