@@ -10,8 +10,8 @@ if(!('ZteUuInstaller.TelnetSession' -as [type])){Add-Type -Path "$PSScriptRoot/t
 function Read-OntValue([string]$Command){
  $id=[Guid]::NewGuid().ToString('N');$begin='BEGIN_'+$id;$end='END_'+$id
  $session.SendLine("echo '$begin'; ( $Command ); rc=`$?; echo; echo '${end}:'`$rc")
- $r=$session.ReadUntil('(?m)^'+$end+':([0-9]+)\r?$',20000)
- $a=[regex]::Match($r,'(?m)^'+$begin+'\r?\n');$b=[regex]::Match($r,'(?m)^'+$end+':([0-9]+)\r?$')
+ $r=$session.ReadUntil('(?m)^'+$end+':([0-9]+)\r*$',20000) -replace '\r+\n',"`n"
+ $a=[regex]::Match($r,'(?m)^'+$begin+'\r?\n');$b=[regex]::Match($r,'(?m)^'+$end+':([0-9]+)\r*$')
  if(!$a.Success -or !$b.Success -or $b.Groups[1].Value -ne '0'){throw '只读识别未完成，未执行安装或管理操作。'}
  return $r.Substring($a.Index+$a.Length,$b.Index-$a.Index-$a.Length).Trim()
 }
@@ -31,7 +31,7 @@ try{
  $profile=Resolve-OntProfile $model $arch $fw $boot
  $route=@(Get-OntRoute $profile $Action $PidOnly.IsPresent $BindingArchive)
  Write-Host ('已识别：'+$model+' / '+$arch+'；固件匹配。')
- Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
+ Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}elseif($profile -eq 'g7615'){'G7615V2 0.1.0-rc1 / CU 框架（实验版）'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
  [pscustomobject]@{Kind='DetectedDevice';Model=$model;Profile=$profile}
  $session.Dispose();$session=$null
  if($Action -eq 'Detect'){Write-Host '识别完成，未写入光猫文件、未启动或停止服务。';return}
@@ -40,6 +40,8 @@ try{
    $global:LASTEXITCODE=0
    & "$PSScriptRoot/profiles/f7615/Auto.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation -NonInteractive
    if($LASTEXITCODE -ne 0){throw 'F7615 操作未完成；后续步骤已停止，请先检查状态。'}
+  }elseif($profile -eq 'g7615'){
+   & "$PSScriptRoot/profiles/g7615/Manage.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation
   }else{
    & "$PSScriptRoot/profiles/f7005/Manage.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation -BindingArchive $BindingArchive -PidOnly:$PidOnly
   }

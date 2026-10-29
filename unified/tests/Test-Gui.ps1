@@ -19,6 +19,11 @@ try{
  Add-Message '光猫端版本：未安装';Add-Message '服务：未安装';Add-Message '自启：未安装';Add-Message 'UU 云连接：未连接';Add-Message '日志管道：未安装'
  foreach($key in @('version','service','boot','log')){if($cards[$key].Text -ne '未安装'){throw "Absent card not reset: $key"}}
  if($cards.cloud.Text -ne '未连接'){throw 'Absent cloud card'}
+ Add-Message '已识别：G7615V2 / aarch64；固件匹配。'
+ Add-Message "VERSION=0.1.0-rc1`nstate=RUNNING`nPROCESS=123 /opt/uu-wol-g7615/uuplugin`nAUTOSTART=ENABLED`nCLOUD=UNVERIFIED`nLOG=procd-logread"
+ if($cards.model.Text -ne 'G7615V2' -or $cards.boot.Text -ne '已启用' -or $cards.cloud.Text -ne '待 UU App 验证' -or $cards.log.Text -ne 'CU 框架日志'){throw 'G7615 cards'}
+ Add-Message "AUTOSTART=DISABLED`nstate=UNINSTALLED"
+ if($cards.boot.Text -ne '未启用' -or $cards.service.Text -ne '已卸载（保留绑定）'){throw 'G7615 removal cards'}
  Write-Output 'BOTH_MODEL_CARDS_STALE_STATE_AND_UNINSTALLED_TESTS_OK'
 }finally{$log.Dispose();$tips.Dispose();foreach($c in $cards.Values){$c.Dispose()}}
 . "$root/tools/GuiWorker.ps1"

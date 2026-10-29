@@ -24,6 +24,11 @@ if((@(Get-OntRoute f7615 ServiceStart $false '') -join ',') -ne 'Start'){throw '
 if((@(Get-OntRoute f7615 ServiceStop $false '') -join ',') -ne 'Stop'){throw 'GUI stop must preserve F7615 autostart'}
 if((@(Get-OntRoute f7615 DisableAutostart $false '') -join ',') -ne 'DisableAutostart'){throw 'F7615 independent autostart'}
 if((@(Get-OntRoute f7005 DisableAutostart $false '') -join ',') -ne 'Stop'){throw 'F7005 coupled autostart'}
+Expect-Rejection {Get-OntRoute g7615 Install $true ''}
+Expect-Rejection {Get-OntRoute g7615 Install $false 'binding.tgz'}
+Expect-Rejection {Get-OntRoute g7615 EnableService $false ''}
+if((@(Get-OntRoute g7615 ServiceStop $false '') -join ',') -ne 'Stop'){throw 'G7615 independent stop'}
+if((@(Get-OntRoute g7615 DisableAutostart $false '') -join ',') -ne 'DisableAutostart'){throw 'G7615 independent autostart'}
 Write-Output 'PROFILE_AND_NEGATIVE_ROUTING_TESTS_OK'
 
 # A fake Telnet client tests the complete dispatcher without network or device writes.
@@ -51,9 +56,9 @@ namespace ZteUuInstaller {
 $sandbox=Join-Path ([IO.Path]::GetTempPath()) ('OntRouteTest-'+[Guid]::NewGuid().ToString('N'))
 $secret=ConvertTo-SecureString 'test-only' -AsPlainText -Force
 try{
- foreach($dir in @('tools','profiles/f7615','profiles/f7005')){$null=New-Item -ItemType Directory -Path (Join-Path $sandbox $dir) -Force}
+ foreach($dir in @('tools','profiles/f7615','profiles/f7005','profiles/g7615')){$null=New-Item -ItemType Directory -Path (Join-Path $sandbox $dir) -Force}
  foreach($file in @('Manage.ps1','tools/Profiles.ps1','tools/Network.ps1')){Copy-Item -LiteralPath (Join-Path $root $file) -Destination (Join-Path $sandbox $file)}
- foreach($profile in @('f7615','f7005')){
+ foreach($profile in @('f7615','f7005','g7615')){
   $name=if($profile -eq 'f7615'){'Auto.ps1'}else{'Manage.ps1'}
   $stub='param($RouterAddress,$Username,$Password,$Action,$BindingArchive,[switch]$PidOnly,[switch]$NonInteractive) [ZteUuInstaller.TelnetSession]::Engines.Add('''+$profile+':$Action'')'
   $stub=$stub.Replace("'$profile"+':$Action' +"'",'"'+$profile+':$Action"')
@@ -67,6 +72,10 @@ try{
  [ZteUuInstaller.TelnetSession]::Model='F7615MV30';[ZteUuInstaller.TelnetSession]::Firmware=$f
  & "$sandbox/Manage.ps1" -Action Install -Password $secret | Out-Null
  if([ZteUuInstaller.TelnetSession]::Engines[1] -ne 'f7615:Install'){throw 'Wrong F7615 backend'}
+ [ZteUuInstaller.TelnetSession]::Model='G7615V2';[ZteUuInstaller.TelnetSession]::Firmware='0afb71c8d938a82395675bc1fa96cb10ec23f5a9ab9f4f3d66073257d02c7b36'
+ & "$sandbox/Manage.ps1" -Action Install -Password $secret | Out-Null
+ if([ZteUuInstaller.TelnetSession]::Engines[2] -ne 'g7615:Install'){throw 'Wrong G7615 backend'}
+ [ZteUuInstaller.TelnetSession]::Firmware=$f
  $before=[ZteUuInstaller.TelnetSession]::Engines.Count
  [ZteUuInstaller.TelnetSession]::Model='G7615V2'
  Expect-Rejection {& "$sandbox/Manage.ps1" -Action Install -Password $secret}

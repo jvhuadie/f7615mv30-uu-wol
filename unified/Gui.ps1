@@ -60,11 +60,16 @@ function Set-Banner([string]$Text, [string]$Kind = 'info') {
 function Add-Message([string]$Text) {
     if ([string]::IsNullOrWhiteSpace($Text)) { return }
     foreach($line in ($Text -split '\r?\n')) {
-        if($line -match '^已识别：(F7615MV30|F7005MV3) /'){$script:detectedModel=$Matches[1];$script:cards.model.Text=$Matches[1]}
+        if($line -match '^已识别：(F7615MV30|F7005MV3|G7615V2) /'){$script:detectedModel=$Matches[1];$script:cards.model.Text=$Matches[1]}
         if($line -match '^VERSION=(.+)$'){
             $script:cards.version.Text='v'+$Matches[1];$script:cards.service.Text='未检测到进程';$script:cards.cloud.Text='未检测到连接';$script:cards.log.Text='由插件管理'
         }
         if($line -match '^PERSISTENT_STATE=(\d+)$'){$script:cards.boot.Text=if($Matches[1] -eq '32'){'已启用'}else{'未启用'}}
+        if($line -eq 'AUTOSTART=ENABLED'){$script:cards.boot.Text='已启用'}
+        if($line -eq 'AUTOSTART=DISABLED'){$script:cards.boot.Text='未启用'}
+        if($line -eq 'CLOUD=UNVERIFIED'){$script:cards.cloud.Text='待 UU App 验证'}
+        if($line -eq 'LOG=procd-logread'){$script:cards.log.Text='CU 框架日志'}
+        if($line -eq 'state=UNINSTALLED'){$script:cards.service.Text='已卸载（保留绑定）'}
         if($line -match '^state=STOPPED$'){$script:cards.service.Text='已停止'}
         if($line -match '^state=PID_READY$'){$script:cards.service.Text='仅 PID 测试'}
         if($line -match '^state=(FAILED|PID_PREPARE_FAILED|RETRY_LIMIT)'){$script:cards.service.Text='启动异常';$script:warningSeen=$true}
@@ -112,7 +117,7 @@ function Show-UninstallChoice {
     $dialog.Font = New-Object Drawing.Font('Microsoft YaHei UI', 10)
     $retain = New-Object Windows.Forms.RadioButton
     $retain.SetBounds(24, 20, 570, 30); $retain.Text = '保留数据（默认，可恢复）'; $retain.Checked = $true
-    $keepText = New-Label "F7615：保留光猫上的程序和绑定，可点击「恢复服务」。`nF7005：先将绑定备份到电脑，再卸载；恢复时选择该备份。"
+    $keepText = New-Label "F7615 / G7615：保留光猫上的程序和绑定，可点击「恢复服务」。`nF7005：先将绑定备份到电脑，再卸载；恢复时选择该备份。"
     $keepText.Dock = 'None'; $keepText.SetBounds(46, 54, 550, 54)
     $full = New-Object Windows.Forms.RadioButton
     $full.SetBounds(24, 120, 570, 30); $full.Text = '完全卸载（不保留光猫上的项目数据）'
@@ -153,7 +158,7 @@ function Start-Operation([string]$Action = 'Check') {
         if (!$Action) { Set-Banner '已取消，没有连接光猫或执行操作。'; return }
     }
     if ($Action -eq 'Stop') {
-        $answer = [Windows.Forms.MessageBox]::Show($script:form, '停止后暂时不能远程开机；F7005 同时关闭自启，F7615 自启不变。是否停止 UU？', '确认停止', [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Warning, [Windows.Forms.MessageBoxDefaultButton]::Button2)
+        $answer = [Windows.Forms.MessageBox]::Show($script:form, '停止后暂时不能远程开机；F7005 同时关闭自启，F7615 / G7615 自启不变。是否停止 UU？', '确认停止', [Windows.Forms.MessageBoxButtons]::YesNo, [Windows.Forms.MessageBoxIcon]::Warning, [Windows.Forms.MessageBoxDefaultButton]::Button2)
         if ($answer -ne [Windows.Forms.DialogResult]::Yes) { return }
     }
     $secret = New-Object Security.SecureString
@@ -182,7 +187,7 @@ function Start-Operation([string]$Action = 'Check') {
 }
 
 $script:form = New-Object Windows.Forms.Form
-$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.0.0'
+$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.1.0-rc1'
 $script:form.Size = New-Object Drawing.Size(970, 850)
 $script:form.MinimumSize = New-Object Drawing.Size(890, 790)
 $script:form.StartPosition = 'CenterScreen'
@@ -203,7 +208,7 @@ $null = $layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', 34)
 $script:form.Controls.Add($layout)
 $title = New-Label 'ZTE ONT · UU 远程开机助手' 22 $true
 $layout.Controls.Add($title, 0, 0)
-$subtitle = New-Label '自动识别 F7615MV30 / F7005MV3  ·  统一工具 v1.0.0  ·  仅限已验证固件' 9.5
+$subtitle = New-Label 'F7615MV30 / F7005MV3 / G7615V2  ·  v1.1.0-rc1  ·  G7615 实验适配' 9.5
 $subtitle.ForeColor = $script:muted
 $layout.Controls.Add($subtitle, 0, 1)
 
@@ -259,7 +264,7 @@ $optionsButton = New-Button '型号选项'
 $optionsButton.Add_Click({
     $d=New-Object Windows.Forms.Form;$d.Text='F7005 安装选项';$d.ClientSize=New-Object Drawing.Size(620,260);$d.StartPosition='CenterParent';$d.Font=$script:form.Font
     $only=New-Object Windows.Forms.CheckBox;$only.Text='仅测试 PID 准备程序，不启动 UU';$only.Checked=$script:pidOnly;$only.SetBounds(20,20,570,30)
-    $label=New-Label '可选：安装时恢复绑定 TGZ。F7615 不使用这些选项。';$label.Dock='None';$label.SetBounds(20,62,580,28)
+    $label=New-Label '可选：安装时恢复绑定 TGZ。其他型号不使用这些选项。';$label.Dock='None';$label.SetBounds(20,62,580,28)
     $path=New-Object Windows.Forms.TextBox;$path.Text=$script:bindingArchive;$path.SetBounds(20,98,440,30)
     $pick=New-Button '选择备份';$pick.SetBounds(475,94,125,36)
     $pick.Add_Click({$fd=New-Object Windows.Forms.OpenFileDialog;try{$fd.Filter='绑定备份 (*.tgz;*.tar.gz)|*.tgz;*.tar.gz';if($fd.ShowDialog($d)-eq 'OK'){$path.Text=$fd.FileName}}finally{$fd.Dispose()}})
@@ -297,7 +302,7 @@ $management = New-Object Windows.Forms.TableLayoutPanel
 $management.Dock = 'Fill'; $management.ColumnCount = 1; $management.RowCount = 2
 $null = $management.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', 30)))
 $null = $management.RowStyles.Add((New-Object Windows.Forms.RowStyle('Percent', 100)))
-$management.Controls.Add((New-Label '服务管理 · F7615 自启独立设置；F7005 启停与自启联动。' 9), 0, 0)
+$management.Controls.Add((New-Label '服务管理 · F7615 / G7615 自启独立设置；F7005 启停与自启联动。' 9), 0, 0)
 $manageFlow = New-Object Windows.Forms.FlowLayoutPanel
 $manageFlow.Dock = 'Fill'
 $script:manageButtons = @()
@@ -371,10 +376,10 @@ $script:timer.Add_Tick({
         $result = Complete-UuGuiWorker $script:work
         foreach ($message in $result.Messages) { Add-Message $message }
         if ($result.Success) {
-            if ($script:lastAction -eq 'Uninstall') { Set-Banner '已按型号保留绑定：F7615 留在光猫，F7005 备份到电脑。' 'warning' }
+            if ($script:lastAction -eq 'Uninstall') { Set-Banner '已按型号保留绑定：F7615 / G7615 留在光猫，F7005 备份到电脑。' 'warning' }
             elseif ($script:lastAction -eq 'UninstallFull') { Set-Banner '完全卸载完成；再次使用需要重新安装并绑定。' 'warning' }
             elseif ($script:lastAction -eq 'Stop') { Set-Banner '服务已停止；需要远程开机前请重新启动 UU。' 'warning' }
-            elseif ($script:lastAction -eq 'DisableAutostart') { Set-Banner '已关闭自启；F7005 同时停止服务，F7615 不立即停止。' }
+            elseif ($script:lastAction -eq 'DisableAutostart') { Set-Banner '已关闭自启；F7005 同时停止服务，F7615 / G7615 不立即停止。' }
             elseif ($script:warningSeen) { Set-Banner '操作已完成，部分状态需要确认，请查看下方记录。' 'warning' }
             else { Set-Banner '操作已完成，请在 UU App 中确认原设备在线。' }
         }

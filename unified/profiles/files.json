@@ -27,5 +27,12 @@
     "tools/FrameworkRepair.ps1",
     "tools/framework-repair.sh",
     "payload/andlink.delta"
+  ],
+  "g7615": [
+    "Manage.ps1",
+    "preflight.sh",
+    "control.sh",
+    "service.sh",
+    "run.sh"
   ]
 }
