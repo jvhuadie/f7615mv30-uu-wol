@@ -187,7 +187,7 @@ function Start-Operation([string]$Action = 'Check') {
 }
 
 $script:form = New-Object Windows.Forms.Form
-$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.1.0-rc3'
+$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.1.0-rc4'
 $script:form.Size = New-Object Drawing.Size(970, 850)
 $script:form.MinimumSize = New-Object Drawing.Size(890, 790)
 $script:form.StartPosition = 'CenterScreen'
@@ -208,7 +208,7 @@ $null = $layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', 34)
 $script:form.Controls.Add($layout)
 $title = New-Label 'ZTE ONT · UU 远程开机助手' 22 $true
 $layout.Controls.Add($title, 0, 0)
-$subtitle = New-Label 'F7615MV30 / F7005MV3 / G7615V2  ·  v1.1.0-rc3  ·  G7615 实验适配' 9.5
+$subtitle = New-Label 'F7615MV30 / F7005MV3 / G7615V2  ·  v1.1.0-rc4  ·  G7615 实验适配' 9.5
 $subtitle.ForeColor = $script:muted
 $layout.Controls.Add($subtitle, 0, 1)
 

@@ -15,7 +15,8 @@ namespace ZteUuInstaller {
    var m=Regex.Match(last,@"echo '(START_[a-f0-9]+)'; \( (.*) \); rc=\$\?; echo; echo '(END_[a-f0-9]+):'");
    if(!m.Success)throw new Exception("Bad frame");string c=m.Groups[2].Value;Commands.Add(c);string v="";int rc=0;
    if(c.StartsWith("/bin/sh -c ")){v="/proc/2750/root";if(Mode=="bad-framework"){v="FRAMEWORK_ROOT_NOT_UNIQUE";rc=12;}}
-   else if(c.StartsWith("df -k "))v="81304";
+   else if(c=="cat /proc/mounts")v="ubi0_0 /opt/cu/apps ubifs rw,nosuid,relatime 0 0";
+   else if(c=="df -k /opt/cu/apps")v="Filesystem 1024-blocks Used Available Use% Mounted on\nubi0_0 88420 2564 81304 3% /opt/cu/apps";
    else if(c.Contains("/control.sh 'start'") && Mode=="start-fails"){v="START_FAILED_CHECK_LOGREAD";rc=1;}
    else if(c.Contains("/control.sh 'status'"))v="VERSION=0.1.0-rc1\nstate=RUNNING\nAUTOSTART=ENABLED\nCLOUD=UNVERIFIED";
    else if(c.StartsWith("[ ! -e '/proc/2750/root/opt/uu-wol-g7615'"))rc=Mode=="existing"?1:0;

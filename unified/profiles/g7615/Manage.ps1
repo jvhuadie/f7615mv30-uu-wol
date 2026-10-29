@@ -28,6 +28,26 @@ function Find-Framework {
  if($r.Text -notmatch '^/proc/[0-9]+/root$'){throw 'CU 框架识别结果异常，未继续。'}
  return $r.Text
 }
+function Get-CuFreeKiB {
+ # The framework overlay persists here. Host df on /proc/PID/root/opt can
+ # select the host root filesystem instead of the container overlay.
+ $mounts=(Remote 'cat /proc/mounts').Text
+ $mount=[regex]::Matches($mounts,'(?m)^\S+[ \t]+/opt/cu/apps[ \t]+ubifs[ \t]+(?<options>\S+)[ \t]+\d+[ \t]+\d+$')
+ if($mount.Count -ne 1 -or ($mount[0].Groups['options'].Value -split ',') -notcontains 'rw'){
+  throw '未确认 /opt/cu/apps 为可写 UBIFS 持久分区，未安装。'
+ }
+ $disk=Remote 'df -k /opt/cu/apps' -AllowFailure
+ $rows=[regex]::Matches($disk.Text,'(?m)^[ \t]*(?:\S+[ \t]+)?(?<total>\d+)[ \t]+(?<used>\d+)[ \t]+(?<free>\d+)[ \t]+\d+%[ \t]+/opt/cu/apps[ \t]*$')
+ if($disk.Code -ne 0 -or $rows.Count -ne 1){
+  Write-Host ('空间检查原始结果：'+$disk.Text)
+  throw '无法读取 /opt/cu/apps 的可用空间（不是已确认空间不足），未安装。'
+ }
+ $free=0L;$total=0L
+ if(![long]::TryParse($rows[0].Groups['free'].Value,[ref]$free) -or ![long]::TryParse($rows[0].Groups['total'].Value,[ref]$total) -or $total -le 0 -or $free -gt $total){throw '持久分区容量数据异常，未安装。'}
+ Write-Host ('CU 持久分区 /opt/cu/apps：可用 '+$free+' KiB（'+[Math]::Round($free/1024.0,1)+' MiB），最低需要 16 MiB。')
+ if($free -lt 16384){throw ('CU 持久分区空间不足：可用 '+$free+' KiB，至少需要 16384 KiB，未安装。')}
+ return $free
+}
 function Upload([string]$name,[byte[]]$bytes){
  if($name -notmatch '^[A-Za-z0-9_.-]+$'){throw '文件名不合法'}
  $target="$base/$name";$part=$target+'.part';$hash=HashBytes $bytes
@@ -88,8 +108,7 @@ try{
   $payload['uu.conf']=[Text.Encoding]::ASCII.GetBytes("log_level=info`nversion=v14.10.6`nlan_ifname=br0`nsn_no_mac_prefix=1`n")
   $payload['managed-v1']=[Text.Encoding]::ASCII.GetBytes("G7615V2 0.1.0-rc1`n")
   # No package-manager calls, remounts, firmware writes or factory file replacement.
-  $free=(Remote "df -k '$framework/opt' | tail -n 1 | awk '{print `$4}'").Text
-  if($free -notmatch '^\d+$' -or [long]$free -lt 16384){throw 'CU 可用空间不足 16 MiB 或无法确认，未安装。'}
+  $free=Get-CuFreeKiB
   $null=Remote "umask 077; mkdir '$base'"
   foreach($name in ($payload.Keys|Sort-Object)){Upload $name $payload[$name]}
   $null=Remote "chmod 700 '$base/uuplugin' '$base/xuplugin-guardian' '$base/run.sh'; /usr/sbin/chroot '$framework' /bin/sh -n /opt/uu-wol-g7615/control.sh"
