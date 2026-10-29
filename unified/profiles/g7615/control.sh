@@ -37,12 +37,15 @@ check_links() {
  done
 }
 stop_owned() {
- pid_identity=
+ pid_held=no
  if [ -f /var/run/uuplugin.pid ] && [ ! -L /var/run/uuplugin.pid ]; then
   for pid in $(owned); do
    for fd in /proc/"$pid"/fd/*; do
     if [ "$fd" -ef /var/run/uuplugin.pid ]; then
-     pid_identity=$(stat -c '%d:%i' /var/run/uuplugin.pid)
+     # Hold the proven file open across service shutdown. -ef compares both
+     # device and inode, without requiring an external stat applet.
+     exec 9</var/run/uuplugin.pid
+     if [ "$fd" -ef /proc/$$/fd/9 ]; then pid_held=yes; break 2; else exec 9<&-; fi
     fi
    done
   done
@@ -53,13 +56,15 @@ stop_owned() {
  for pid in $(owned); do kill -TERM "$pid" 2>/dev/null || :; kill -CONT "$pid" 2>/dev/null || :; done
  sleep 3
  [ -z "$(owned)" ] || fail STOP_INCOMPLETE
- if [ -n "$pid_identity" ] && [ ! -L /var/run/uuplugin.pid ] && [ -f /var/run/uuplugin.pid ] && [ "$(stat -c '%d:%i' /var/run/uuplugin.pid)" = "$pid_identity" ]; then
+ if [ "$pid_held" = yes ] && [ ! -L /var/run/uuplugin.pid ] && [ -f /var/run/uuplugin.pid ] && [ /proc/$$/fd/9 -ef /var/run/uuplugin.pid ]; then
   in_use=no
   for fd in /proc/[0-9]*/fd/*; do
+   [ "$fd" != /proc/$$/fd/9 ] || continue
    if [ "$fd" -ef /var/run/uuplugin.pid ]; then in_use=yes; fi
   done
   [ "$in_use" = yes ] || rm /var/run/uuplugin.pid
  fi
+ if [ "$pid_held" = yes ]; then exec 9<&-; fi
 }
 start_owned() {
  [ ! -e "$BASE/uninstalled" ] || fail USE_RESTORE

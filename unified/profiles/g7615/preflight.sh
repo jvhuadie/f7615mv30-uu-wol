@@ -21,5 +21,5 @@ for f in bin/sh etc/rc.common lib/functions.sh lib/functions/procd.sh usr/share/
 done
 [ -x /usr/sbin/chroot ] || exit 14
 # Verify real framework APIs and bus availability, without registering a service.
-/usr/sbin/chroot "$root" /bin/sh -c '. /lib/functions.sh; . /lib/functions/procd.sh; type procd_open_instance >/dev/null && type procd_set_param >/dev/null && type procd_close_instance >/dev/null && ubus list service | grep -qx service && test -d /sys/class/net/br0 && test -r /proc/1/stat && test / -ef / && stat -c "%d:%i" / >/dev/null' || exit 15
+/usr/sbin/chroot "$root" /bin/sh -c '. /lib/functions.sh; . /lib/functions/procd.sh; type procd_open_instance >/dev/null && type procd_set_param >/dev/null && type procd_close_instance >/dev/null && ubus list service | grep -qx service && test -d /sys/class/net/br0 && test -r /proc/1/stat && test / -ef /' || exit 15
 echo "$root"

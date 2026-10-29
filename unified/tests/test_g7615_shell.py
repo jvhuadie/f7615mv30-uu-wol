@@ -123,6 +123,55 @@ class G7615ShellTests(unittest.TestCase):
         self.assertFalse(self.base.exists())
         self.assertEqual(sibling.read_text(), 'preserve')
 
+    def test_pid_cleanup_without_stat_preserves_replacements_and_foreign_holders(self):
+        source = (ROOT / 'profiles/g7615/control.sh').read_text()
+        function = source.split('stop_owned() {', 1)[1].split('\nstart_owned()', 1)[0]
+        function = 'stop_owned() {' + function
+        self.assertNotIn('$(stat ', source)
+        self.assertNotIn('stat -c', (ROOT / 'profiles/g7615/preflight.sh').read_text())
+        for mode in ['owned', 'replaced', 'foreign-holder', 'unproven']:
+            with self.subTest(mode=mode):
+                folder = self.disk / mode
+                folder.mkdir()
+                pidfile = folder / 'uuplugin.pid'
+                pidfile.write_text('101')
+                reference = folder / 'held'
+                reference.hardlink_to(pidfile)
+                proc = folder / 'proc'
+                fd = proc / '101/fd/1'
+                fd.parent.mkdir(parents=True)
+                if mode != 'unproven':
+                    fd.hardlink_to(pidfile)
+                if mode == 'foreign-holder':
+                    other = proc / '202/fd/2'
+                    other.parent.mkdir(parents=True)
+                    other.hardlink_to(pidfile)
+                def shellpath(path):
+                    value = path.as_posix()
+                    return value[2:] if os.name == 'nt' else value
+                f = function.replace('/proc/$$/fd/9', shellpath(reference))
+                f = f.replace('/proc/', shellpath(proc) + '/')
+                f = f.replace('/var/run/uuplugin.pid', shellpath(pidfile))
+                # NT denies unlink of an open file. The hardlink above models the
+                # held Linux fd identity; exercise the real -ef cleanup decisions.
+                if os.name == 'nt':
+                    f = f.replace('exec 9<' + shellpath(pidfile), ':')
+                stop = 'rm -f "' + shellpath(fd) + '"; stopped=yes; '
+                if mode == 'replaced':
+                    stop += 'rm "' + shellpath(pidfile) + '"; echo foreign > "' + shellpath(pidfile) + '"; '
+                f = f.replace('/bin/sh /etc/rc.common "$SERVICE" stop', 'mock_stop')
+                script = ('set -eu; stopped=no; '
+                          'stat() { echo STAT_MUST_NOT_BE_CALLED >&2; return 127; }; '
+                          'owned() { [ "$stopped" = yes ] || echo 101; }; '
+                          'sleep() { :; }; kill() { :; }; fail() { echo "$1" >&2; exit 1; }; '
+                          'mock_stop() { ' + stop + '};\n' + f + '\nstop_owned\n')
+                result = subprocess.run([BB, 'sh', '-c', script], capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertNotIn(b'STAT_MUST_NOT_BE_CALLED', result.stderr)
+                self.assertEqual(pidfile.exists(), mode != 'owned')
+                if mode == 'replaced':
+                    self.assertEqual(pidfile.read_text().strip(), 'foreign')
+
     def test_missing_marker_refuses_delete(self):
         self.register()
         (self.base / 'managed-v1').unlink()
