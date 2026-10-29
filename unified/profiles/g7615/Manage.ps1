@@ -9,9 +9,10 @@ if(!('ZteUuInstaller.TelnetSession' -as [type])){Add-Type -Path "$root/../../too
 function Remote([string]$command,[int]$timeout=30000,[switch]$AllowFailure){
  $id=[Guid]::NewGuid().ToString('N');$start='START_'+$id;$end='END_'+$id
  $session.SendLine("echo '$start'; ( $command ); rc=`$?; echo; echo '${end}:'`$rc")
- $raw=$session.ReadUntil('(?m)^'+$end+':([0-9]+)\r*$', $timeout) -replace '\r+\n',"`n"
+ # Consume the complete line: ReadUntil returns only through the regex match.
+ $raw=$session.ReadUntil('(?m)^'+$end+':([0-9]+)\r*\n', $timeout) -replace '\r+\n',"`n"
  $begin=[regex]::Match($raw,'(?m)^'+$start+'\n');$finish=[regex]::Match($raw,'(?m)^'+$end+':([0-9]+)$')
- if(!$begin.Success -or !$finish.Success){throw '远端响应不完整，已停止操作。'}
+ if(!$begin.Success -or !$finish.Success -or $finish.Index -lt ($begin.Index+$begin.Length)){throw '远端响应不完整，已停止操作。'}
  $body=$raw.Substring($begin.Index+$begin.Length,$finish.Index-$begin.Index-$begin.Length).Trim();$code=[int]$finish.Groups[1].Value
  if($code -ne 0 -and !$AllowFailure){throw ('G7615 操作失败，代码 '+$code+'：'+$body)}
  return [pscustomobject]@{Text=$body;Code=$code}

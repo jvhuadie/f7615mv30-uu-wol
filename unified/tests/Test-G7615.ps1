@@ -1,11 +1,11 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 Add-Type @'
 using System;using System.Collections.Generic;using System.Security;using System.Text.RegularExpressions;
 namespace ZteUuInstaller {
  public class TelnetSession:IDisposable {
   public static List<string> Commands=new List<string>();
-  public static string Mode="success";
+  public static string Mode="success",Eol="\r\r\n";
   string last="";
   public TelnetSession(string a,int p,int t){}
   public void SendLine(string s){if(s.Contains("\n")||s.Contains("\r"))throw new Exception("Multiline transport");last=s;}
@@ -21,7 +21,9 @@ namespace ZteUuInstaller {
    else if(c.StartsWith("[ ! -e '/proc/2750/root/opt/uu-wol-g7615'"))rc=Mode=="existing"?1:0;
    else if(c.StartsWith("echo '") || c.StartsWith("[ ! -L ") || c.StartsWith("[ ! -e ") || c.StartsWith("printf '") || c.StartsWith("umask 077; mkdir ") || c.StartsWith("chmod 700 ") || c.StartsWith("/usr/sbin/chroot ")){}
    else throw new Exception("Unexpected command:"+c);
-   return m.Groups[1].Value+"\r\r\n"+v.Replace("\n","\r\r\n")+"\r\r\n"+m.Groups[3].Value+":"+rc+"\r\r\n";
+   string transcript=m.Groups[1].Value+Eol+v.Replace("\n",Eol)+Eol+m.Groups[3].Value+":"+rc+Eol;
+   var end=Regex.Match(transcript,pattern);if(!end.Success)throw new Exception("Response pattern did not match");
+   return transcript.Substring(0,end.Index+end.Length);
   }
   public void Dispose(){}
  }
@@ -31,11 +33,15 @@ $secret=ConvertTo-SecureString 'fixture' -AsPlainText -Force
 function Run-Case([string]$mode,[string]$action,[bool]$fails){
  [ZteUuInstaller.TelnetSession]::Mode=$mode;[ZteUuInstaller.TelnetSession]::Commands.Clear()
  $failed=$false
- try { & "$root/profiles/g7615/Manage.ps1" -Action $action -Password $secret 6>$null | Out-Null } catch { $failed=$true;if(!$fails){throw} }
+ try { & "$root/profiles/g7615/Manage.ps1" -Action $action -Password $secret 6>$null | Out-Null } catch { $failed=$true;if(!$fails){throw};if($mode -eq 'bad-framework' -and $_.Exception.Message -notmatch '代码 12：FRAMEWORK_ROOT_NOT_UNIQUE'){throw "Incorrect failure: $_"};if($mode -eq 'start-fails' -and $_.Exception.Message -notmatch 'START_FAILED_CHECK_LOGREAD'){throw "Incorrect failure: $_"} }
  if($failed -ne $fails){throw "Unexpected outcome: $mode $action"}
  return ,([ZteUuInstaller.TelnetSession]::Commands.ToArray())
 }
 try{
+ foreach($eol in @("`n","`r`n","`r`r`n")){
+  [ZteUuInstaller.TelnetSession]::Eol=$eol
+  $c=Run-Case success Status $false
+ }
  $c=Run-Case bad-framework Install $true
  if($c.Count -ne 1){throw 'Wrote after failed preflight'}
  $c=Run-Case existing Install $true
