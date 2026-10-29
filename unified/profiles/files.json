@@ -33,6 +33,7 @@
     "preflight.sh",
     "control.sh",
     "service.sh",
-    "run.sh"
+    "run.sh",
+    "LanTransfer.cs"
   ]
 }

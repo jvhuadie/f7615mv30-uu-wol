@@ -1,16 +1,18 @@
 ﻿param([ValidateSet('Install','Status','Start','Stop','EnableAutostart','DisableAutostart','Restore','Uninstall','UninstallFull')][string]$Action='Status',
  [string]$RouterAddress='192.168.1.1',[string]$Username='root',[Security.SecureString]$Password)
 $ErrorActionPreference='Stop'
-$root=$PSScriptRoot;$session=$null;$ownsPassword=$false
+$root=$PSScriptRoot;$session=$null;$ownsPassword=$false;$script:lanUnavailable=$false
 . "$root/../../tools/Network.ps1"
 if(!(Test-UuLanIPv4 $RouterAddress) -or $Username -notmatch '^[A-Za-z0-9_.-]{1,32}$'){throw '地址或用户名格式不正确'}
 if(!$Password){$Password=Read-Host 'Telnet 密码' -AsSecureString;$ownsPassword=$true}
 if(!('ZteUuInstaller.TelnetSession' -as [type])){Add-Type -Path "$root/../../tools/TelnetSession.cs"}
-function Remote([string]$command,[int]$timeout=30000,[switch]$AllowFailure){
+function Remote([string]$command,[int]$timeout=30000,[switch]$AllowFailure,[scriptblock]$Progress){
  $id=[Guid]::NewGuid().ToString('N');$start='START_'+$id;$end='END_'+$id
  $session.SendLine("echo '$start'; ( $command ); rc=`$?; echo; echo '${end}:'`$rc")
  # Consume the complete line: ReadUntil returns only through the regex match.
- $raw=$session.ReadUntil('(?m)^'+$end+':([0-9]+)\r*\n', $timeout) -replace '\r+\n',"`n"
+ $pattern='(?m)^'+$end+':([0-9]+)\r*\n'
+ $raw=if($Progress){$session.ReadUntilWithProgress($pattern,$timeout,[Action]$Progress)}else{$session.ReadUntil($pattern,$timeout)}
+ $raw=$raw -replace '\r+\n',"`n"
  $begin=[regex]::Match($raw,'(?m)^'+$start+'\n');$finish=[regex]::Match($raw,'(?m)^'+$end+':([0-9]+)$')
  if(!$begin.Success -or !$finish.Success -or $finish.Index -lt ($begin.Index+$begin.Length)){throw '远端响应不完整，已停止操作。'}
  $body=$raw.Substring($begin.Index+$begin.Length,$finish.Index-$begin.Index-$begin.Length).Trim();$code=[int]$finish.Groups[1].Value
@@ -48,18 +50,56 @@ function Get-CuFreeKiB {
  if($free -lt 16384){throw ('CU 持久分区空间不足：可用 '+$free+' KiB，至少需要 16384 KiB，未安装。')}
  return $free
 }
+function Try-LanUpload([string]$name,[byte[]]$bytes,[string]$part){
+ if($bytes.Length -lt 65536 -or $script:lanUnavailable){return $false}
+ $curl=(Remote '[ -x /bin/curl ] && echo CURL || echo NONE').Text
+ if($curl -cne 'CURL'){Write-Host '宿主未找到 curl，使用 Telnet 备用传输。';$script:lanUnavailable=$true;return $false}
+ $server=$null
+ try{
+  try{
+   if(!('G7615LanTransfer' -as [type])){Add-Type -Path "$root/LanTransfer.cs"}
+   $socket=New-Object Net.Sockets.Socket([Net.Sockets.AddressFamily]::InterNetwork,[Net.Sockets.SocketType]::Dgram,[Net.Sockets.ProtocolType]::Udp)
+   try{$socket.Connect($RouterAddress,23);$local=$socket.LocalEndPoint.Address.ToString()}finally{$socket.Dispose()}
+   if(!(Test-UuLanIPv4 $local)){throw '未找到可用于局域网传输的地址'}
+   $server=New-Object G7615LanTransfer($local,$RouterAddress,$name,$bytes)
+  }catch{
+   Write-Host ('无法建立临时传输服务，回退 Telnet：'+$_.Exception.Message)
+   $script:lanUnavailable=$true;return $false
+  }
+  $watch=[Diagnostics.Stopwatch]::StartNew()
+  Write-Host ('局域网直传 '+$name+'：'+[Math]::Round($bytes.Length/1048576.0,2)+' MiB；连接超时 5 秒，不修改防火墙规则。')
+  $progress={
+   $sent=$server.BytesSent;$seconds=[Math]::Max(0.1,$watch.Elapsed.TotalSeconds)
+   Write-Host ('直传 '+$name+'：已发送 '+[Math]::Round($sent/1048576.0,2)+' / '+[Math]::Round($bytes.Length/1048576.0,2)+' MiB，平均 '+[Math]::Round($sent/1024.0/$seconds,1)+' KiB/s；等待设备下载确认。')
+  }
+  # Fixed host curl, no curlrc/proxy/redirects; process deadline precedes Telnet deadline.
+  $url=$server.Url
+  $r=Remote "[ -f '$part' ] && [ ! -L '$part' ] && /bin/curl -q --noproxy '*' --connect-timeout 5 --max-time 120 -fsS -o '$part' '$url'" 135000 -AllowFailure -Progress $progress
+  if($r.Code -eq 0){return $true}
+  Write-Host ('局域网下载失败（代码 '+$r.Code+'），回退 Telnet；防火墙或光猫到电脑的路由可能阻止连接。')
+  # Only after a definite exit: do not retry if the session timed out/disconnected.
+  $null=Remote "[ -f '$part' ] && [ ! -L '$part' ] && : > '$part'"
+  $script:lanUnavailable=$true
+  return $false
+ }finally{if($server){$server.Dispose()}}
+}
 function Upload([string]$name,[byte[]]$bytes){
  if($name -notmatch '^[A-Za-z0-9_.-]+$'){throw '文件名不合法'}
  $target="$base/$name";$part=$target+'.part';$hash=HashBytes $bytes
  $null=Remote "[ ! -e '$part' ] && [ ! -L '$part' ] && [ ! -e '$target' ] && [ ! -L '$target' ] && (umask 077; set -C; : > '$part')"
+ $watch=[Diagnostics.Stopwatch]::StartNew()
+ $fast=Try-LanUpload $name $bytes $part
  $nextProgress=0
+ if(!$fast){
  for($offset=0;$offset -lt $bytes.Length;$offset+=768){
   $take=[Math]::Min(768,$bytes.Length-$offset);$encoded=New-Object Text.StringBuilder
   for($j=0;$j -lt $take;$j++){$null=$encoded.Append('\').Append([Convert]::ToString($bytes[$offset+$j],8).PadLeft(3,'0'))}
   $null=Remote ("printf '"+$encoded.ToString()+"' >> '$part'")
-  if($offset -ge $nextProgress){Write-Host ('传输 '+$name+'：'+[int](100*$offset/$bytes.Length)+'%');$nextProgress+=131072}
+  if($watch.Elapsed.TotalSeconds -ge $nextProgress){$sent=$offset+$take;Write-Host ('Telnet '+$name+'：'+[int](100*$sent/$bytes.Length)+'%，'+[Math]::Round($sent/1024.0,1)+' / '+[Math]::Round($bytes.Length/1024.0,1)+' KiB，平均 '+[Math]::Round($sent/1024.0/[Math]::Max(0.1,$watch.Elapsed.TotalSeconds),1)+' KiB/s');$nextProgress=$watch.Elapsed.TotalSeconds+2}
  }
- $null=Remote "echo '$hash  $part' | sha256sum -c - && mv '$part' '$target'"
+ }
+ $null=Remote "echo '$hash  $part' | sha256sum -c - && [ ! -e '$target' ] && [ ! -L '$target' ] && mv '$part' '$target'"
+ Write-Host ('传输完成并通过 SHA256：'+$name+'，耗时 '+[Math]::Round($watch.Elapsed.TotalSeconds,1)+' 秒。')
 }
 function Assert-Payload {
  $manifest=Get-Content "$root/../f7005/payload/manifest.json" -Raw|ConvertFrom-Json

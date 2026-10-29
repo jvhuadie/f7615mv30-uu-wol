@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Sockets;
@@ -176,10 +176,22 @@ namespace ZteUuInstaller
 
         public string ReadUntil(string pattern, int timeoutMs)
         {
+            return ReadUntilWithProgress(pattern, timeoutMs, null);
+        }
+
+        // Callback runs on the calling thread; it must not read/write this session.
+        public string ReadUntilWithProgress(string pattern, int timeoutMs, Action progress)
+        {
+            long nextProgress = 0;
             Regex regex = new Regex(pattern, RegexOptions.Multiline, TimeSpan.FromSeconds(1));
             Stopwatch watch = Stopwatch.StartNew();
             while (watch.ElapsedMilliseconds < timeoutMs)
             {
+                if (progress != null && watch.ElapsedMilliseconds >= nextProgress)
+                {
+                    progress();
+                    nextProgress = watch.ElapsedMilliseconds + 1000;
+                }
                 Match match = regex.Match(pending.ToString());
                 if (match.Success)
                 {
