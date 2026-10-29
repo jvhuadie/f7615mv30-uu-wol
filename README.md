@@ -117,3 +117,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File unified/tools/build_gui.ps1
 - F7615 后续全新安装再次出现首次运行停止，重启后恢复；已补充安装后手动重启要求，尚未修复退出原因。
 
 v1.0.0 整合已验证实现，不扩大固件支持范围，也不改变已有实测结论。具体备份、回退、验证步骤见 [使用说明](INSTALL.txt)，历次结果见 [验证记录](unified/VALIDATION.txt)。
+
+
+## 协作署名
+
+本项目由维护者主导开发与实机验证，使用 **OpenAI Codex** 辅助进行代码实现、型号适配分析、问题排查、测试和文档整理。
