@@ -61,10 +61,49 @@ function Upload([string]$name,[byte[]]$bytes){
  }
  $null=Remote "echo '$hash  $part' | sha256sum -c - && mv '$part' '$target'"
 }
+function Assert-Payload {
+ $manifest=Get-Content "$root/../f7005/payload/manifest.json" -Raw|ConvertFrom-Json
+ foreach($name in @('control.sh','run.sh','service.sh','uuplugin','xuplugin-guardian')){
+  $hash=if($name -in @('uuplugin','xuplugin-guardian')){$manifest.$name}else{HashBytes ([IO.File]::ReadAllBytes("$root/$name"))}
+  $null=Remote "[ ! -L '$base' ] && [ -f '$base/$name' ] && [ ! -L '$base/$name' ] && echo '$hash  $base/$name' | sha256sum -c -"
+ }
+}
+function Resume-StagedPayload($payload){
+ # Only a fully uploaded, unregistered installation is eligible. Never overwrite
+ # a running/registered service, private binding, symlink, or unknown file.
+ $guard="[ -d '$base' ] && [ ! -L '$base' ]"
+ foreach($path in @('etc/init.d/uu-wol-g7615','etc/rc.d/S99uu-wol-g7615','etc/rc.d/K10uu-wol-g7615')){
+  $guard+=" && [ ! -e '$framework/$path' ] && [ ! -L '$framework/$path' ]"
+ }
+ $null=Remote $guard
+ $names=($payload.Keys|Sort-Object) -join '|'
+ $null=Remote ("for f in '$base'/* '$base'/.[!.]* '$base'/..?*; do [ -e " + '"$f"' + " ] || [ -L " + '"$f"' + " ] || continue; case " + '"${f##*/}"' + " in $names) ;; *) echo UNKNOWN_STAGED_FILE; exit 1;; esac; done")
+ $null=Remote 'for f in /proc/[0-9]*/exe; do e=$(readlink "$f" 2>/dev/null) || continue; case "$e" in */uuplugin|*/xuplugin-guardian) echo UU_ALREADY_RUNNING; exit 1;; esac; done'
+ $legacy=@{
+  'control.sh'='5e9d4fe94d6bfb3332de7c82731b62082409b91974b2d126ee66112a813a457f'
+  'run.sh'='977dcd4a45f0d2bdb3a676a7f3ad232af96c5ea581c6246abd4be9ae9ee3dd6a'
+  'payload.sha256'='b70e1cd8af0682410b0537925e9fef7c539a3b9df948c3f1fe9303fedfaaed2d'
+ }
+ $replace=@{}
+ # Validate every file before making any changes. Completed binaries are reused.
+ foreach($name in ($payload.Keys|Sort-Object)){
+  $r=Remote "[ -f '$base/$name' ] && [ ! -L '$base/$name' ] && sha256sum '$base/$name'"
+  if($r.Text -notmatch '^([0-9a-f]{64})[ \t]+'){throw "暂存文件校验响应异常：$name"}
+  $actual=$Matches[1];$wanted=HashBytes $payload[$name]
+  if($actual -ceq $wanted){Write-Host ("校验通过，复用："+$name);continue}
+  if(!$legacy.ContainsKey($name) -or $actual -cne $legacy[$name]){throw "暂存文件与已知版本不匹配，未覆盖：$name"}
+  $replace[$name]=$actual
+ }
+ foreach($name in ($replace.Keys|Sort-Object)){
+  Upload ($name+'.repair') $payload[$name]
+  $old=$replace[$name]
+  $null=Remote "[ ! -L '$base/$name' ] && echo '$old  $base/$name' | sha256sum -c - && mv '$base/$name.repair' '$base/$name'"
+ }
+ Write-Host '已核验并接续上传完成的安装；无需重传 UU 程序。'
+}
 function Control([string]$operation){
  if((Find-Framework) -cne $framework){throw '框架进程发生变化，请重新检查状态。'}
- $expected=HashBytes ([IO.File]::ReadAllBytes("$root/control.sh"))
- $null=Remote "[ ! -L '$base' ] && [ ! -L '$base/control.sh' ] && echo '$expected  $base/control.sh' | sha256sum -c -"
+ Assert-Payload
  return (Remote "/usr/sbin/chroot '$framework' /bin/sh /opt/uu-wol-g7615/control.sh '$operation'" 45000).Text
 }
 function Show-Status {
@@ -88,7 +127,7 @@ try{
   Write-Host '光猫端版本：未安装';Write-Host '服务：未安装';Write-Host '自启：未安装';Write-Host 'UU 云连接：未连接';Write-Host '日志管道：未安装';return
  }
  if($Action -eq 'Install'){
-  if($absent.Code -ne 0){throw '已有 G7615 安装或残留，未覆盖。请先检查状态；保留绑定卸载后可用“恢复服务”。'}
+  if($absent.Code -ne 0){Write-Host '检测到已有文件，先核验是否为可接续的未登记安装。'}
   $null=Remote ("/usr/sbin/chroot '$framework' /bin/sh -c " + (ShellLiteral '[ ! -e /var/run/uuplugin.pid ] && [ ! -L /var/run/uuplugin.pid ] && [ ! -e /tmp/uu ] && [ ! -L /tmp/uu ]'))
   # Reuse the already pinned static ARM64 payload, not the F7005 installer.
   Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -109,8 +148,10 @@ try{
   $payload['managed-v1']=[Text.Encoding]::ASCII.GetBytes("G7615V2 0.1.0-rc1`n")
   # No package-manager calls, remounts, firmware writes or factory file replacement.
   $free=Get-CuFreeKiB
-  $null=Remote "umask 077; mkdir '$base'"
-  foreach($name in ($payload.Keys|Sort-Object)){Upload $name $payload[$name]}
+  if($absent.Code -eq 0){
+   $null=Remote "umask 077; mkdir '$base'"
+   foreach($name in ($payload.Keys|Sort-Object)){Upload $name $payload[$name]}
+  }else{Resume-StagedPayload $payload}
   $null=Remote "chmod 700 '$base/uuplugin' '$base/xuplugin-guardian' '$base/run.sh'; /usr/sbin/chroot '$framework' /bin/sh -n /opt/uu-wol-g7615/control.sh"
   $null=Control register
   # Start and verify first. Failure leaves autostart disabled for diagnosis.

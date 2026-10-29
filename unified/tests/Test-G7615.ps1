@@ -20,6 +20,7 @@ namespace ZteUuInstaller {
    else if(c.Contains("/control.sh 'start'") && Mode=="start-fails"){v="START_FAILED_CHECK_LOGREAD";rc=1;}
    else if(c.Contains("/control.sh 'status'"))v="VERSION=0.1.0-rc1\nstate=RUNNING\nAUTOSTART=ENABLED\nCLOUD=UNVERIFIED";
    else if(c.StartsWith("[ ! -e '/proc/2750/root/opt/uu-wol-g7615'"))rc=Mode=="existing"?1:0;
+   else if(c.StartsWith("[ -d ") && Mode=="existing")rc=1;
    else if(c.StartsWith("echo '") || c.StartsWith("[ ! -L ") || c.StartsWith("[ ! -e ") || c.StartsWith("printf '") || c.StartsWith("umask 077; mkdir ") || c.StartsWith("chmod 700 ") || c.StartsWith("/usr/sbin/chroot ")){}
    else throw new Exception("Unexpected command:"+c);
    string transcript=m.Groups[1].Value+Eol+v.Replace("\n",Eol)+Eol+m.Groups[3].Value+":"+rc+Eol;

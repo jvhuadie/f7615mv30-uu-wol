@@ -84,12 +84,14 @@ class G7615ShellTests(unittest.TestCase):
             r = subprocess.run([BB, 'awk', rule], input=text.encode(), capture_output=True)
             self.assertEqual(r.returncode == 0, accepted, (text, r.stderr))
 
-    def test_refuse_modified_payload(self):
+    def test_framework_control_does_not_need_sha256sum(self):
         self.register()
-        (self.base / 'uuplugin').write_text('changed')
-        r = self.run_control('start')
-        self.assertNotEqual(r.returncode, 0)
-        self.assertIn(b'PAYLOAD_CHANGED', r.stderr)
+        script = 'sha256sum() { echo SHA256_UNAVAILABLE >&2; return 127; };\n'
+        script += (self.base / 'control.sh').read_text()
+        result = subprocess.run([BB, 'sh', '-c', script, 'fixture', 'stop'], capture_output=True, timeout=10)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn(b'SHA256_UNAVAILABLE', result.stderr)
+        self.assertNotIn('sha256sum -c', (ROOT / 'profiles/g7615/run.sh').read_text())
 
     def test_refuse_foreign_service_and_boot_link(self):
         service = self.disk / 'etc/init.d/uu-wol-g7615'

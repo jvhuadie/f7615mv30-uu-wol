@@ -89,7 +89,7 @@ cd "$BASE"
 for f in control.sh service.sh run.sh payload.sha256 uuplugin xuplugin-guardian uu.conf; do
  [ -f "$f" ] && [ ! -L "$f" ] || fail "INVALID_FILE:$f"
 done
-sha256sum -c payload.sha256 >/dev/null || fail PAYLOAD_CHANGED
+# Payload hashes are verified by the host-side manager before dispatch.
 check_links
 action=${1:-status}
 if [ "$action" != status ]; then

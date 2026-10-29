@@ -21,5 +21,5 @@ for f in bin/sh etc/rc.common lib/functions.sh lib/functions/procd.sh usr/share/
 done
 [ -x /usr/sbin/chroot ] || exit 14
 # Verify real framework APIs and bus availability, without registering a service.
-/usr/sbin/chroot "$root" /bin/sh -c '. /lib/functions.sh; . /lib/functions/procd.sh; type procd_open_instance >/dev/null && type procd_set_param >/dev/null && type procd_close_instance >/dev/null && ubus list service | grep -qx service && test -d /sys/class/net/br0 && test -r /proc/1/stat && test / -ef /' || exit 15
+/usr/sbin/chroot "$root" /bin/sh -c 'missing=; for tool in readlink cmp cp chmod rm mkdir rmdir sleep; do type "$tool" >/dev/null 2>&1 || missing="$missing $tool"; done; [ -z "$missing" ] || { echo "FRAMEWORK_TOOLS_MISSING:$missing" >&2; exit 1; }; . /lib/functions.sh; . /lib/functions/procd.sh; type procd_open_instance >/dev/null && type procd_set_param >/dev/null && type procd_close_instance >/dev/null && ubus list service | grep -qx service && test -d /sys/class/net/br0 && test -r /proc/1/stat && test / -ef /' || exit 15
 echo "$root"
