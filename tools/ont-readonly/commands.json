@@ -142,7 +142,7 @@
   {
     "id": "service-identity",
     "title": "插件服务权限及可执行文件（不读命令行）",
-    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(java|osgid|pc|crond)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p\" \"$p/status\"; readlink \"$p/exe\"; readlink \"$p/cwd\"; fi; done; echo SERVICE_IDENTITY_DONE",
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(java|osgid|pc|crond)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^CapPrm:/p; /^CapInh:/p; /^CapAmb:/p; /^NoNewPrivs:/p\" \"$p/status\"; readlink \"$p/exe\"; readlink \"$p/cwd\"; fi; done; echo SERVICE_IDENTITY_DONE",
     "outputLimitChars": 196608,
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
@@ -212,7 +212,7 @@
   {
     "id": "container-processes",
     "title": "框架进程权限、根目录与命名空间（不读命令行）",
-    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(saf|ufwmg|procd|ubusd|hpsrv|uappd|init[.]lxc|cuinform)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^NoNewPrivs:/p\" \"$p/status\"; for n in exe cwd root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; fi; done; echo CONTAINER_PROCESSES_DONE",
+    "command": "for p in /proc/[0-9]*; do [ -r \"$p/status\" ] || continue; if grep -qE \"^Name:[[:space:]]*(saf|ufwmg|procd|ubusd|hpsrv|uappd|init[.]lxc|cuinform)$\" \"$p/status\"; then echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^CapPrm:/p; /^CapInh:/p; /^CapAmb:/p; /^NoNewPrivs:/p\" \"$p/status\"; for n in exe cwd root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; fi; done; echo CONTAINER_PROCESSES_DONE",
     "outputLimitChars": 196608,
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
@@ -303,7 +303,7 @@
   {
     "id": "user-process-context",
     "title": "用户态进程权限与命名空间（不读参数或环境变量）",
-    "command": "count=0; for p in /proc/[0-9]*; do [ -r \"$p/status\" ] && [ -e \"$p/exe\" ] || continue; count=$((count+1)); if [ \"$count\" -gt 160 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^NoNewPrivs:/p; /^Seccomp:/p\" \"$p/status\"; for n in exe root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; done; echo PROCESS_CONTEXT_DONE",
+    "command": "count=0; for p in /proc/[0-9]*; do [ -r \"$p/status\" ] && [ -e \"$p/exe\" ] || continue; count=$((count+1)); if [ \"$count\" -gt 160 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"PID ${p##*/}\"; sed -n \"/^Name:/p; /^PPid:/p; /^Uid:/p; /^Gid:/p; /^CapEff:/p; /^CapPrm:/p; /^CapInh:/p; /^CapAmb:/p; /^NoNewPrivs:/p; /^Seccomp:/p\" \"$p/status\"; for n in exe root ns/mnt ns/net ns/user; do echo \"LINK $n\"; readlink \"$p/$n\" || :; done; done; echo PROCESS_CONTEXT_DONE",
     "outputLimitChars": 196608,
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
   },
@@ -366,7 +366,7 @@
   {
     "id": "vendor-java-policy",
     "title": "厂商 Java 原生执行权限白名单",
-    "command": "for f in /usr/local/osgi/local/osgi/felix/security.policy /usr/local/osgi/local/j2re/lib/security/private.policy /usr/local/osgi/local/j2re/lib/security/java.policy /usr/java/jre/lib/security/java.policy /usr/java/jre/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*grant[ \\t]*[{][ \\t\\r]*$/ {print \"POLICY_GRANT_SCOPE=GLOBAL\"} /^[ \\t]*grant[ \\t]+code[Bb]ase/ {print \"POLICY_GRANT_SCOPE=CODEBASE_RESTRICTED\"} /^[ \\t]*permission[ \\t]+java[.]security[.]AllPermission/ || /^[ \\t]*permission[ \\t]+java[.]lang[.]RuntimePermission[ \\t]+\"(loadLibrary[.][A-Za-z0-9_*.-]+|manageProcess|modifyThread|modifyThreadGroup|readFileDescriptor|writeFileDescriptor)\"/ || /^[ \\t]*permission[ \\t]+java[.]io[.]FilePermission[ \\t]+\"(..ALL FILES..|\\/(usr\\/data|usr\\/local\\/osgi|usr\\/plugin|tmp|var)[A-Za-z0-9_\\/*.-]*)\"/ {sub(/[ \\t]*\\/\\/.*$/, \"\"); print; n++; if(n==120) exit}' \"$f\"; fi; done; echo VENDOR_JAVA_POLICY_DONE",
+    "command": "for f in /usr/local/osgi/local/osgi/felix/security.policy /usr/local/osgi/local/j2re/lib/security/private.policy /usr/local/osgi/local/j2re/lib/security/java.policy /usr/java/jre/lib/security/java.policy /usr/java/jre/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*grant[ \\t\\r]*$/ {pending=1; next} pending && /^[ \\t]*[{]/ {print \"POLICY_GRANT_SCOPE=GLOBAL\"; pending=0} /^[ \\t]*grant[ \\t]*[{][ \\t\\r]*$/ {print \"POLICY_GRANT_SCOPE=GLOBAL\"} /^[ \\t]*grant[ \\t]+code[Bb]ase/ {print \"POLICY_GRANT_SCOPE=CODEBASE_RESTRICTED\"} /^[ \\t]*permission[ \\t]+java[.]security[.]AllPermission/ || /^[ \\t]*permission[ \\t]+java[.]lang[.]RuntimePermission[ \\t]+\"(loadLibrary[.][A-Za-z0-9_*.-]+|manageProcess|modifyThread|modifyThreadGroup|readFileDescriptor|writeFileDescriptor)\"/ || /^[ \\t]*permission[ \\t]+java[.]io[.]FilePermission[ \\t]+\"(..ALL FILES..|\\/(usr\\/data|usr\\/local\\/osgi|usr\\/plugin|tmp|var)[A-Za-z0-9_\\/*.-]*)\"/ {sub(/[ \\t]*\\/\\/.*$/, \"\"); print; n++; if(n==120) exit}' \"$f\"; fi; done; echo VENDOR_JAVA_POLICY_DONE",
     "outputLimitChars": 65536,
     "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
   },
@@ -418,5 +418,26 @@
     "command": "netstat -lntp 2>/dev/null | grep -E '(^Proto|java|osgid|felix)' | sed -n '1,60p'; echo JAVA_LISTENERS_DONE",
     "outputLimitChars": 65536,
     "scope": "只读解析固定 Felix 配置中的 /usr/data 或 /usr/plugin 根路径；拒绝点点路径，缓存目录和登记条目有数量边界；不执行配置"
+  },
+  {
+    "id": "plugin-control-binary-hints",
+    "title": "厂商插件管理程序静态线索",
+    "command": "for t in sidbg sismac sendcmd getcap setcap; do echo \"TOOL $t\"; which \"$t\" 2>/dev/null || :; done; for f in /bin/osgid /bin/sidbg /bin/sismac; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; grep -aoE '[A-Za-z0-9_./: =()-]{5,}' \"$f\" | grep -E 'sidbg|osgidcomm|Usage|usage|install name|installurl|start \\[|stop \\[|uninstall \\[|sismac [1234]' | sed -n '1,70p'; done; echo CONTROL_BINARY_HINTS_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商程序静态字符串与目录/条件权限白名单；不执行参数或插件管理命令，不测试写入权限"
+  },
+  {
+    "id": "plugin-runtime-directory-modes",
+    "title": "插件与运行目录权限元数据",
+    "command": "for d in /var /var/run /var/lock /var/osgitmp /usr/data /usr/data/o_ins /usr/data/o_dl /usr/plugin; do [ -d \"$d\" ] || continue; echo \"DIR $d\"; ls -ldn \"$d\"; done; echo PLUGIN_RUNTIME_DIRECTORY_MODES_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商程序静态字符串与目录/条件权限白名单；不执行参数或插件管理命令，不测试写入权限"
+  },
+  {
+    "id": "osgi-conditional-policy",
+    "title": "OSGi 条件权限块白名单",
+    "command": "for f in /usr/local/osgi/local/osgi/felix/security.policy /usr/java/osgi/security.policy; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*(ALLOW|DENY)[ \\t]*[{]/ {print \"POLICY_BLOCK_BEGIN=\" $1; n++} /^[ \\t]*[(][ \\t]*(java[.]io[.]FilePermission|java[.]lang[.]RuntimePermission|java[.]security[.]AllPermission|org[.]osgi[.]framework[.]AdminPermission|org[.]osgi[.]framework[.]ServicePermission|java[.]security[.]SecurityPermission)[ \\t]/ || /^[ \\t]*\\[[ \\t]*org[.]osgi[.]service[.]condpermadmin[.]BundleLocationCondition[ \\t]/ {print; n++} /^[ \\t]*[}]/ {print \"POLICY_BLOCK_END\"; n++} n==150 {exit}' \"$f\"; done; echo OSGI_CONDITIONAL_POLICY_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商程序静态字符串与目录/条件权限白名单；不执行参数或插件管理命令，不测试写入权限"
   }
 ]

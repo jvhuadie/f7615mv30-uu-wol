@@ -27,12 +27,13 @@ try{
  if((Read-OntValue 'id -u') -cne '0'){throw '当前账户不是 root，未执行操作。'}
  $model=Read-OntValue 'uname -n';$arch=Read-OntValue 'uname -m'
  $fw=(Read-OntValue 'sha256sum /bin/cspd').Split(' ')[0];$boot=''
- if($model -ceq 'F7005MV3'){$boot=(Read-OntValue 'sha256sum /etc/default/S01userconfig').Split(' ')[0]}
+ if($model -ceq 'F7005MV3' -or $model -ceq 'skyworth'){$boot=(Read-OntValue 'sha256sum /etc/default/S01userconfig').Split(' ')[0]}
  $profile=Resolve-OntProfile $model $arch $fw $boot
  $route=@(Get-OntRoute $profile $Action $PidOnly.IsPresent $BindingArchive)
- Write-Host ('已识别：'+$model+' / '+$arch+'；固件匹配。')
- Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}elseif($profile -eq 'g7615'){'G7615V2 / CU 框架'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
- [pscustomobject]@{Kind='DetectedDevice';Model=$model;Profile=$profile}
+ $displayModel=if($profile -eq 'skd847n'){'SK-D847N'}else{$model}
+ Write-Host ('已识别：'+$displayModel+' / '+$arch+'；固件匹配。')
+ Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}elseif($profile -eq 'g7615'){'G7615V2 / CU 框架'}elseif($profile -eq 'skd847n'){'创维 SK-D847N / 原厂 OSGi（候选版）'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
+ [pscustomobject]@{Kind='DetectedDevice';Model=$displayModel;Profile=$profile}
  $session.Dispose();$session=$null
  if($Action -eq 'Detect'){Write-Host '识别完成，未写入光猫文件、未启动或停止服务。';return}
  foreach($operation in $route){
@@ -42,6 +43,8 @@ try{
    if($LASTEXITCODE -ne 0){throw 'F7615 操作未完成；后续步骤已停止，请先检查状态。'}
   }elseif($profile -eq 'g7615'){
    & "$PSScriptRoot/profiles/g7615/Manage.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation
+  }elseif($profile -eq 'skd847n'){
+   & "$PSScriptRoot/profiles/skd847n/Manage.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation -BindingArchive $BindingArchive
   }else{
    & "$PSScriptRoot/profiles/f7005/Manage.ps1" -RouterAddress $RouterAddress -Username $Username -Password $Password -Action $operation -BindingArchive $BindingArchive -PidOnly:$PidOnly
   }

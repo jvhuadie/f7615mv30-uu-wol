@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $script:root=$PSScriptRoot;$script:work=$null;$script:resultDirectory=''
 $script:form=New-Object Windows.Forms.Form
-$script:form.Text='光猫 · 只读兼容性检测 v0.7.1'
+$script:form.Text='光猫 · 只读兼容性检测 v0.7.2'
 $script:form.ClientSize=New-Object Drawing.Size(820,730)
 $script:form.MinimumSize=New-Object Drawing.Size(840,770)
 $script:form.StartPosition='CenterScreen'

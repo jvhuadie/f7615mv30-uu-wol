@@ -35,5 +35,12 @@
     "service.sh",
     "run.sh",
     "LanTransfer.cs"
+  ],
+  "skd847n": [
+    "Manage.ps1",
+    "control.sh",
+    "payload/service.jar",
+    "payload/launch-uu",
+    "payload/manifest.json"
   ]
 }

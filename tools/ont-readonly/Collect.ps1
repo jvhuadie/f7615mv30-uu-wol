@@ -33,10 +33,27 @@ function Protect-ProbeText([string]$Value) {
 function Read-ProbeCommand([string]$Command) {
     $token=[Guid]::NewGuid().ToString('N')
     $start='__PROBE_START_'+$token+'__'; $end='__PROBE_END_'+$token+'__'
-    $session.SendLine("echo $start; ( $Command )")
+    $line="echo $start; ( $Command )"
+    $variable=''
+    if([Text.Encoding]::UTF8.GetByteCount($line) -gt 900){
+        # Some vendor PTYs truncate input around 1 KiB. Stage only a fixed
+        # allowlisted command in memory; never write a script on the device.
+        $variable='__probe_c_'+$token
+        $session.SendLine($variable+"=''")
+        for($offset=0;$offset -lt $Command.Length;$offset+=128){
+            $chunk=$Command.Substring($offset,[Math]::Min(128,$Command.Length-$offset))
+            $quoted="'"+$chunk.Replace("'","'\''")+"'"
+            $part=$variable+'="${'+$variable+'}"'+$quoted
+            if([Text.Encoding]::UTF8.GetByteCount($part) -gt 900){throw '检测命令分段仍超过传输边界'}
+            $session.SendLine($part)
+        }
+        $line='echo '+$start+'; ( /bin/sh -c "${'+$variable+'}" )'
+    }
+    $session.SendLine($line)
     $session.SendLine('echo '+$end+':$?')
     $pattern='(?m)'+[regex]::Escape($end)+':([0-9]+)\r?\n'
     $raw=$session.ReadUntil($pattern,30000)
+    if($variable){$session.SendLine('unset '+$variable)}
     $finish=[regex]::Match($raw,$pattern)
     $begin=[regex]::Match($raw,'(?m)^(?:[^\r\n]{0,80}[#$] )?'+[regex]::Escape($start)+'\r?\n')
     if(!$begin.Success -or $finish.Index -lt $begin.Index){throw '检测响应不完整'}
@@ -105,10 +122,10 @@ $safeLabel=[regex]::Replace($identity.fileLabel,'[^A-Za-z0-9\u4e00-\u9fff_.-]','
 $archLabel=if($identity.architecture){$identity.architecture}else{'架构未知'}
 $name='ZTE-'+$safeLabel+'-'+$archLabel+'-readonly-'+$stamp
 $coverage=[ordered]@{planned=$commands.Count;completed=$sections.Count;interruptedGroup=$interruptedGroup;notCompleted=@($commands | Select-Object -Skip $sections.Count | ForEach-Object {$_.id});warningSections=@($sections | Where-Object {$_.warnings.Count -gt 0}).Count;truncatedSections=@($sections | Where-Object {$_.truncated}).Count;note='COMPLETE 只表示所有分组返回；分组返回码不保证每个子命令成功，未命中和有界输出不证明不存在。'}
-$report=[ordered]@{tool='中兴光猫只读检测 v0.7.1';schemaVersion=3;collectedAt=[DateTimeOffset]::Now.ToString('o');status=$state;identity=$identity;coverage=$coverage;note='型号线索与用户填写信息分别保留，待核对机身标签；本工具不判断已兼容、不修改设备。地址及常见敏感字段已自动隐藏，发送前仍请检查。';failure=$failure;attempted=$attempted;sections=@($sections.ToArray())}
+$report=[ordered]@{tool='光猫只读检测 v0.7.2';schemaVersion=3;collectedAt=[DateTimeOffset]::Now.ToString('o');status=$state;identity=$identity;coverage=$coverage;note='型号线索与用户填写信息分别保留，待核对机身标签；本工具不判断已兼容、不修改设备。地址及常见敏感字段已自动隐藏，发送前仍请检查。';failure=$failure;attempted=$attempted;sections=@($sections.ToArray())}
 $json=ConvertTo-Json -InputObject $report -Depth 8
 $lines=New-Object Collections.Generic.List[string]
-$lines.Add('中兴光猫只读检测报告 v0.7.1');$lines.Add('状态：'+$state);$lines.Add((Format-ProbeIdentity $identity));$lines.Add('本报告仅含只读采集结果，不代表 UU 已适配；没有安装、上传脚本、重启或修改光猫。')
+$lines.Add('光猫只读检测报告 v0.7.2');$lines.Add('状态：'+$state);$lines.Add((Format-ProbeIdentity $identity));$lines.Add('本报告仅含只读采集结果，不代表 UU 已适配；没有安装、上传脚本、重启或修改光猫。')
 $lines.Add('未采集账号配置、固件镜像、UU 绑定文件或完整进程命令行。已隐藏常见地址与敏感字段，发送前请自行检查。')
 $lines.Add(('采集覆盖：'+$sections.Count+'/'+$commands.Count+'；有提示分组：'+$coverage.warningSections+'；输出截断：'+$coverage.truncatedSections))
 $lines.Add($coverage.note)

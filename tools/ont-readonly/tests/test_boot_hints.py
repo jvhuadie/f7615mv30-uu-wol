@@ -58,5 +58,10 @@ class HintsTests(unittest.TestCase):
   data=b'felix.auto.start.1= \\\n file:/usr/local/osgi/a.jar \\\n file:/usr/local/osgi/b.jar\npassword=PRIVATE\n'
   out=self.run_fixture('osgi-autostart-continuations',data,['/usr/local/osgi/local/osgi/felix/conf/config.properties'])
   self.assertIn('a.jar',out);self.assertIn('b.jar',out);self.assertNotIn('PRIVATE',out)
+ def test_conditional_policy_keeps_deny_execution_scope(self):
+  data=b'DENY {\n (java.io.FilePermission "/bin/*" "execute")\n password=PRIVATE\n}\nALLOW {\n (java.security.AllPermission "*" "*")\n}\n'
+  out=self.run_fixture('osgi-conditional-policy',data,['/usr/local/osgi/local/osgi/felix/security.policy'])
+  self.assertIn('POLICY_BLOCK_BEGIN=DENY',out);self.assertIn('POLICY_BLOCK_BEGIN=ALLOW',out)
+  self.assertIn('/bin/*',out);self.assertNotIn('PRIVATE',out)
 
 if __name__=='__main__':unittest.main()

@@ -24,6 +24,11 @@ try{
  if($cards.model.Text -ne 'G7615V2' -or $cards.boot.Text -ne '已启用' -or $cards.cloud.Text -ne '待 UU App 验证' -or $cards.log.Text -ne 'CU 框架日志'){throw 'G7615 cards'}
  Add-Message "AUTOSTART=DISABLED`nstate=UNINSTALLED"
  if($cards.boot.Text -ne '未启用' -or $cards.service.Text -ne '已卸载（保留绑定）'){throw 'G7615 removal cards'}
+ Add-Message '已识别：SK-D847N / aarch64；固件匹配。'
+ Add-Message "VERSION=0.1.0-rc1`nPERSISTENT_STATE=32`nREBOOT_ACCEPTANCE=PASSED`nPROCESS=233 /usr/data/uu-wol-skd847n/uuplugin`nCLOUD_TCP_ESTABLISHED=yes"
+ if($cards.model.Text -ne 'SK-D847N' -or $cards.boot.Text -ne '本次重启已验证' -or $cards.cloud.Text -ne 'TCP 已连接'){throw 'Skyworth status cards'}
+ Add-Message "MAIN_RUNNING=no`nCLOUD_TCP_ESTABLISHED=no"
+ if($cards.service.Text -eq '运行中' -or $cards.cloud.Text -eq 'TCP 已连接'){throw 'Skyworth stale process state'}
  Write-Output 'BOTH_MODEL_CARDS_STALE_STATE_AND_UNINSTALLED_TESTS_OK'
 }finally{$log.Dispose();$tips.Dispose();foreach($c in $cards.Values){$c.Dispose()}}
 . "$root/tools/GuiWorker.ps1"

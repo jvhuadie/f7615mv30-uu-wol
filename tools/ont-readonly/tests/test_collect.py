@@ -1,5 +1,5 @@
 """Synthetic endpoint tests: never connects to an actual modem."""
-import hashlib,json,os,re,socket,subprocess,tempfile,threading,unittest
+import hashlib,json,os,re,socket,subprocess,tempfile,threading,unittest,shlex
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 COMMANDS=json.loads((ROOT/'commands.json').read_text(encoding='utf-8'))
@@ -18,13 +18,25 @@ class Endpoint:
     c.sendall(b'G7615V2\r\nLogin: ');assert line()=='root';c.sendall(b'Password: ');assert line()==SECRET
     if self.mode=='login-failed':c.sendall(b'Access denied\r\nLogin: ');return
     c.sendall(b'\r\n/ # ')
-    pending_rc=0
+    pending_rc=0;variables={}
     while True:
      text=line()
      if not text:break
+     if self.mode=='short-lines':assert len(text.encode())<=900,text
+     init=re.fullmatch(r"(__probe_c_[a-f0-9]+)=''",text)
+     if init:variables[init[1]]='';continue
+     append=re.fullmatch(r'(__probe_c_[a-f0-9]+)="\$\{\1\}"(.*)',text)
+     if append:
+      words=shlex.split(append[2]);assert len(words)==1
+      variables[append[1]]+=words[0];continue
+     cleanup=re.fullmatch(r'unset (__probe_c_[a-f0-9]+)',text)
+     if cleanup:variables.pop(cleanup[1],None);continue
      m=re.fullmatch(r'echo (__PROBE_START_[a-f0-9]+__); \( (.*) \)',text)
      if m:
-      cmd=m.group(2);assert cmd in [x['command'] for x in COMMANDS],cmd
+      cmd=m.group(2)
+      staged=re.fullmatch(r'/bin/sh -c "\$\{(__probe_c_[a-f0-9]+)\}"',cmd)
+      if staged:cmd=variables[staged[1]]
+      assert cmd in [x['command'] for x in COMMANDS],cmd
       self.commands.append(cmd)
       if self.mode=='partial' and len(self.commands)==3:return
       pending_rc=127 if self.mode=='missing' else 0
@@ -51,6 +63,10 @@ class Endpoint:
   except Exception as e:self.error=e
   finally:self.s.close()
 class CollectorTests(unittest.TestCase):
+ def test_limited_terminal_preserves_exact_allowlisted_commands(self):
+  _,report,commands=self.perform('short-lines')
+  self.assertEqual(report['status'],'COMPLETE')
+  self.assertEqual(commands,[x['command'] for x in COMMANDS])
  def perform(self,mode,declared=''):
   with tempfile.TemporaryDirectory(prefix='g7615-probe-中文 ') as td:
    base=Path(td);server=Endpoint(mode)

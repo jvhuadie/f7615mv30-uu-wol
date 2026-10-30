@@ -4,7 +4,7 @@ $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 if (!$OutputPath) {
     $dist = Join-Path $root 'dist'
     $null = [IO.Directory]::CreateDirectory($dist)
-    $OutputPath = Join-Path $dist 'ZTE-ONT-readonly-v0.7.1.exe'
+    $OutputPath = Join-Path $dist 'ZTE-ONT-readonly-v0.7.2.exe'
 }
 $references = @('System.dll', 'System.Core.dll', 'System.Windows.Forms.dll',
     [System.Management.Automation.PowerShell].Assembly.Location)
