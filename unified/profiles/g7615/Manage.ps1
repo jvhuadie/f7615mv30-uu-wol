@@ -161,7 +161,7 @@ try{
   if($hello -match '(?im)access denied|login incorrect|(?:login|username)\s*:\s*$'){throw '登录失败'}
  }
  $framework=Find-Framework;$base="$framework/opt/uu-wol-g7615"
- Write-Host 'G7615V2 实验适配：CU 框架服务；尚待实机重启及远程开机验收。'
+ Write-Host 'G7615V2：CU 框架服务；参考固件已收到用户本轮测试及重启测试成功反馈。'
  $absent=Remote "[ ! -e '$base' ] && [ ! -L '$base' ] && [ ! -e '$framework/etc/init.d/uu-wol-g7615' ] && [ ! -L '$framework/etc/init.d/uu-wol-g7615' ] && [ ! -e '$framework/etc/rc.d/S99uu-wol-g7615' ] && [ ! -L '$framework/etc/rc.d/S99uu-wol-g7615' ] && [ ! -e '$framework/etc/rc.d/K10uu-wol-g7615' ] && [ ! -L '$framework/etc/rc.d/K10uu-wol-g7615' ]" -AllowFailure
  if($Action -eq 'Status' -and $absent.Code -eq 0){
   Write-Host '光猫端版本：未安装';Write-Host '服务：未安装';Write-Host '自启：未安装';Write-Host 'UU 云连接：未连接';Write-Host '日志管道：未安装';return
@@ -198,7 +198,7 @@ try{
   $null=Control start
   $null=Control enable
   Show-Status
-  Write-Host '实验版已启动并登记自启。请在 UU App 验证绑定、远程开机，再手动重启验证；工具不会自动重启光猫。'
+  Write-Host '服务已启动并登记自启。请在 UU App 验证绑定、远程开机，再手动重启验证；工具不会自动重启光猫。'
  }else{
   $operation=switch($Action){'Status'{'status'} 'Start'{'start'} 'Stop'{'stop'} 'EnableAutostart'{'enable'} 'DisableAutostart'{'disable'} 'Restore'{'restore'} 'Uninstall'{'uninstall'} 'UninstallFull'{'purge'}}
   $result=Control $operation;if($result){Write-Host $result}
