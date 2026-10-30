@@ -192,7 +192,7 @@ function Start-Operation([string]$Action = 'Check') {
 }
 
 $script:form = New-Object Windows.Forms.Form
-$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.2.0-rc1'
+$script:form.Text = 'ZTE ONT · UU 远程开机助手 v1.2.0'
 $script:form.Size = New-Object Drawing.Size(970, 850)
 $script:form.MinimumSize = New-Object Drawing.Size(890, 790)
 $script:form.StartPosition = 'CenterScreen'
@@ -212,8 +212,20 @@ $null = $layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('Percent', 100)
 $null = $layout.RowStyles.Add((New-Object Windows.Forms.RowStyle('Absolute', 34)))
 $script:form.Controls.Add($layout)
 $title = New-Label 'ZTE ONT · UU 远程开机助手' 22 $true
-$layout.Controls.Add($title, 0, 0)
-$subtitle = New-Label 'F7615MV30 / F7005MV3 / G7615V2 / SK-D847N  ·  v1.2.0-rc1  ·  创维候选适配' 9.5
+$header = New-Object Windows.Forms.TableLayoutPanel
+$header.Dock = 'Fill'; $header.ColumnCount = 2; $header.RowCount = 1
+$null = $header.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Percent', 100)))
+$null = $header.ColumnStyles.Add((New-Object Windows.Forms.ColumnStyle('Absolute', 90)))
+$header.Controls.Add($title, 0, 0)
+$aboutButton = New-Button '关于'
+$aboutButton.Dock = 'Fill'; $aboutButton.Margin = New-Object Windows.Forms.Padding(4, 3, 0, 3)
+$aboutButton.Add_Click({
+    $text = "光猫 · UU 远程开机助手 v1.2.0（2026-10-31）`n`n支持匹配固件的 F7615MV30、F7005MV3、G7615V2、创维 SK-D847N。`n参考创维设备已验证安装、重启自启及远程开机。其他固件需先采集核验。`n`n维护者：jvhuadie`n代码、适配分析、测试和文档协作：OpenAI Codex`n本项目为社区工具，非网易、中兴或创维官方产品。`n`n项目与下载：https://github.com/jvhuadie/zte-ont-uu-wol`n已有正常安装无需重装；使用说明见主界面对应按钮。"
+    $null = [Windows.Forms.MessageBox]::Show($script:form, $text, '关于', 'OK', 'Information')
+})
+$header.Controls.Add($aboutButton, 1, 0)
+$layout.Controls.Add($header, 0, 0)
+$subtitle = New-Label 'F7615MV30 / F7005MV3 / G7615V2 / SK-D847N  ·  v1.2.0  ·  正式版 · 创维已验证' 9.5
 $subtitle.ForeColor = $script:muted
 $layout.Controls.Add($subtitle, 0, 1)
 

@@ -1,8 +1,8 @@
 ﻿# 光猫只读检测工具 v0.7.2
 
-v0.7.2 已提供本地构建，本轮尚未发布新的 GitHub Release；[当前公开检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.6.1) · [使用说明](INSTALL.txt) · [提交适配资料](https://share.fnnas.net/s/a6cea4a86c714bdf87)
+[下载 v0.7.2 EXE](https://github.com/jvhuadie/zte-ont-uu-wol/releases/download/probe-v0.7.2/ZTE-ONT-readonly-v0.7.2.exe) · [Release 与 ZIP](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.7.2) · [使用说明](INSTALL.txt) · [提交适配资料](https://share.fnnas.net/s/a6cea4a86c714bdf87)
 
-独立 Windows 单文件 EXE，用于收集中兴光猫不同型号、固件的适配资料。需要已有 Telnet 权限；不负责解锁或开启 Telnet。Windows 需 PowerShell 5.1 / .NET Framework，无需 Python、SDK 或管理员运行。
+独立 Windows 单文件 EXE，用于收集中兴、创维等光猫不同型号、固件的适配资料。需要已有 Telnet 权限；不负责解锁或开启 Telnet。Windows 需 PowerShell 5.1 / .NET Framework，无需 Python、SDK 或管理员运行。
 
 ## 使用与反馈
 
@@ -48,3 +48,7 @@ v0.7.2 补充：只读解析 Felix 配置中的持久缓存根目录，拒绝包
 v0.7.2：共 63 组；新增 sidbg/osgid/sismac 管理程序静态线索、运行目录权限和 OSGi 条件权限块，并补充 CapPrm/CapInh/CapAmb。仅 which/静态读取，不执行 sismac 或插件管理操作。
 
 长命令按安全短行在内存中组装，兼容创维终端的输入长度限制，不向光猫写入脚本文件。
+
+## 关于
+
+维护者：[jvhuadie](https://github.com/jvhuadie)。代码、适配分析、测试和文档由 OpenAI Codex 协作完成。社区工具，非设备厂商官方产品；检测工具与 UU 管理工具独立发布，版本号分别维护。

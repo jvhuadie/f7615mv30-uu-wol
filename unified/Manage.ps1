@@ -32,7 +32,7 @@ try{
  $route=@(Get-OntRoute $profile $Action $PidOnly.IsPresent $BindingArchive)
  $displayModel=if($profile -eq 'skd847n'){'SK-D847N'}else{$model}
  Write-Host ('已识别：'+$displayModel+' / '+$arch+'；固件匹配。')
- Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}elseif($profile -eq 'g7615'){'G7615V2 / CU 框架'}elseif($profile -eq 'skd847n'){'创维 SK-D847N / 原厂 OSGi（候选版）'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
+ Write-Host ('安装方案：'+$(if($profile -eq 'f7615'){'F7615MV30 v0.6.1 / Wi-Fi 配置回调'}elseif($profile -eq 'g7615'){'G7615V2 / CU 框架'}elseif($profile -eq 'skd847n'){'创维 SK-D847N / 原厂 OSGi'}else{'F7005MV3 0.1.0-rc1 / 原厂插件机制'}))
  [pscustomobject]@{Kind='DetectedDevice';Model=$displayModel;Profile=$profile}
  $session.Dispose();$session=$null
  if($Action -eq 'Detect'){Write-Host '识别完成，未写入光猫文件、未启动或停止服务。';return}

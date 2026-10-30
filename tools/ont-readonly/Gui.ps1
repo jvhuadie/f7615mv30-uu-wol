@@ -20,7 +20,12 @@ function Input([string]$Text,[int]$X,[int]$Y,[int]$W){
 function Button([string]$Text,[int]$X,[int]$Y,[int]$W){
  $c=New-Object Windows.Forms.Button;$c.Text=$Text;$c.SetBounds($X,$Y,$W,38);$c.BackColor=[Drawing.Color]::White;$script:form.Controls.Add($c);return $c
 }
-$title=Label '光猫 · 只读适配检测' 24 20 760 38
+$title=Label '光猫 · 只读适配检测' 24 20 640 38
+$about=Button '关于' 690 20 95
+$about.Add_Click({
+ $text="光猫只读适配检测 v0.7.2（2026-10-31）`n`n63 组通用采集，适用于中兴、创维等设备的适配分析。`nSK-D847N 已完成 63/63 组实机采集；检测完成不代表已支持安装。`n不安装软件、不改配置、不导出完整备份；报告保存到电脑，由用户检查后提交。`n`n维护者：jvhuadie`n代码、适配分析、测试和文档协作：OpenAI Codex`n社区工具，非设备厂商官方产品。`n`n项目：https://github.com/jvhuadie/zte-ont-uu-wol`n反馈入口见「提交适配资料」；网页名字栏请填设备型号。"
+ $null=[Windows.Forms.MessageBox]::Show($script:form,$text,'关于','OK','Information')
+})
 $title.Font=New-Object Drawing.Font('Microsoft YaHei UI',18,[Drawing.FontStyle]::Bold)
 $null=Label "多型号适配资料采集 · 不安装 UU、不上传脚本、不修改光猫、不重启服务。" 24 66 770 28
 $null=Label '光猫 IP 地址' 24 111 115 25;$address=Input '192.168.1.1' 145 108 225

@@ -176,7 +176,7 @@ try{
   };Write-Host '已从电脑备份恢复绑定文件。'}
   $null=Remote "[ ! -e '$data/enabled' ] && [ ! -L '$data/enabled' ] && : > '$data/enabled' && chown 107:110 '$data/enabled' && chmod 644 '$data/enabled'"
   try{$null=Control start}catch{try{$null=Control stop}catch{};throw '项目已暂存，但启动未通过，请检查状态；已尝试停用自启'}
-  Write-Host '已安装创维候选版。请在 UU App 验证在线和远程开机；光猫重启需单独验收，工具不自动重启。'
+  Write-Host '已安装创维 SK-D847N 服务。请在 UU App 验证在线和远程开机；光猫重启需单独验收，工具不自动重启。'
  }else{
   if($Action -eq 'UninstallFull'){Backup-Binding}
   $op=switch($Action){'Status'{'status'} 'Start'{'start'} 'Stop'{'stop'} 'Restore'{'restore'} 'Uninstall'{'uninstall'} 'UninstallFull'{'purge'}}
