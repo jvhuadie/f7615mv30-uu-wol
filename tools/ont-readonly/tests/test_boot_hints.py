@@ -38,5 +38,15 @@ class HintsTests(unittest.TestCase):
   data=b'lxc.rootfs.path = dir:/opt/cu/apps/test\nlxc.start.auto = 1\nlxc.environment = password=PRIVATE\nlxc.hook.pre-start = /root/PRIVATE.sh\n'
   out=self.run_fixture('cu-lxc-fields',data,['/etc/lxc/default.conf'])
   self.assertIn('lxc.rootfs.path',out);self.assertIn('lxc.start.auto',out);self.assertNotIn('PRIVATE',out)
+ def test_vendor_felix_fields_exclude_unrelated_configuration(self):
+  data=b'password=PRIVATE\nacs.url=PRIVATE\norg.osgi.framework.storage=/usr/data/felix-cache\nfelix.auto.start.1=file:/usr/local/osgi/a.jar\n'
+  out=self.run_fixture('vendor-osgi-config',data,['/usr/local/osgi/local/felix.properties'])
+  self.assertIn('org.osgi.framework.storage=/usr/data/felix-cache',out)
+  self.assertIn('felix.auto.start.1=',out);self.assertNotIn('PRIVATE',out)
+ def test_vendor_policy_filters_unrelated_grants_and_credentials(self):
+  data=b'password=PRIVATE\ngrant principal PRIVATE {\n permission java.security.AllPermission;\n permission java.io.FilePermission "/usr/data/-", "read,write,execute";\n permission java.io.FilePermission "/private/PRIVATE", "read";\n permission java.lang.RuntimePermission "loadLibrary.*";\n};\n'
+  out=self.run_fixture('vendor-java-policy',data,['/usr/local/osgi/local/j2re/lib/security/private.policy'])
+  self.assertIn('java.security.AllPermission',out);self.assertIn('"/usr/data/-"',out)
+  self.assertIn('loadLibrary.*',out);self.assertNotIn('PRIVATE',out)
 
 if __name__=='__main__':unittest.main()

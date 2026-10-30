@@ -341,5 +341,54 @@
     "command": "for app in curl wget nslookup ping ip iptables ip6tables nft; do echo \"TOOL $app\"; command -v \"$app\" || :; done; for f in /etc/resolv.conf /var/tmp/resolv.conf /tmp/resolv.conf /tmp/resolv.conf.auto; do [ -e \"$f\" ] || continue; echo \"FILE $f\"; ls -l \"$f\"; awk '/^[[:space:]]*nameserver[[:space:]]/ {n++} END {print \"NAMESERVER_ENTRY_COUNT=\" n+0}' \"$f\"; done; echo NETWORK_ENVIRONMENT_DONE",
     "outputLimitChars": 196608,
     "scope": "固定只读命令；目录、文本与候选项有数量/行数边界；未命中不证明不存在"
+  },
+  {
+    "id": "vendor-version-files",
+    "title": "厂商生成的型号与版本文件",
+    "command": "for f in /var/tmp/SKY_SOFTVERSION /var/tmp/SKY_HARDVERSION /var/tmp/sky_wlan_wifitype; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sed -n '1,4p' \"$f\"; fi; done; echo VENDOR_VERSION_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-osgi-layout",
+    "title": "厂商 OSGi 与持久插件目录",
+    "command": "for d in /usr/local/osgi /usr/local/osgi/local /usr/local/osgi/local/osgi /usr/local/osgi/local/osgi/felix /usr/data /usr/data/osgi /usr/data/bundlecache /usr/data/plugin /usr/data/plugins /usr/local/osgi/local/osgi/felix/bundle /usr/local/osgi/local/osgi/felix/conf /usr/local/osgi/local/osgi/felix/felix-cache; do if [ -d \"$d\" ]; then echo \"DIR $d\"; ls -lan \"$d\" 2>&1 | sed -n '1,65p'; fi; done; echo VENDOR_OSGI_LAYOUT_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-osgi-config",
+    "title": "厂商 Felix 自动加载与存储字段白名单",
+    "command": "for f in /usr/local/osgi/local/felix.properties /usr/local/osgi/local/osgi/felix/conf/config.properties /usr/local/osgi/local/osgi/felix/conf/felix.properties /usr/local/osgi/local/osgi/felix/config.properties /usr/local/osgi/local/osgi/felix/felix.properties /usr/local/osgi/local/osgi/felix/conf/system.properties /usr/java/conf/config.properties /usr/data/osgi/conf/config.properties; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*(org[.]osgi[.]framework[.](storage|bootdelegation|system[.]packages|security)|felix[.](auto[.](start|install|deploy[.](dir|action))|cache[.](rootdir|profile|filelimit)|bundle[.]|native[.]|startlevel[.]|log[.]level)|java[.]library[.]path)[A-Za-z0-9_.-]*[ \\t]*[:=]/ {print; n++; if(n==90) exit}' \"$f\"; fi; done; echo VENDOR_OSGI_CONFIG_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-java-policy",
+    "title": "厂商 Java 原生执行权限白名单",
+    "command": "for f in /usr/local/osgi/local/j2re/lib/security/private.policy /usr/local/osgi/local/j2re/lib/security/java.policy /usr/java/jre/lib/security/java.policy /usr/java/jre/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*permission[ \\t]+java[.]security[.]AllPermission/ || /^[ \\t]*permission[ \\t]+java[.]lang[.]RuntimePermission[ \\t]+\"(loadLibrary[.][A-Za-z0-9_*.-]+|manageProcess|modifyThread|modifyThreadGroup|readFileDescriptor|writeFileDescriptor)\"/ || /^[ \\t]*permission[ \\t]+java[.]io[.]FilePermission[ \\t]+\"(..ALL FILES..|\\/(usr\\/data|usr\\/local\\/osgi|usr\\/plugin|tmp|var)[A-Za-z0-9_\\/*.-]*)\"/ {sub(/[ \\t]*\\/\\/.*$/, \"\"); print; n++; if(n==120) exit}' \"$f\"; fi; done; echo VENDOR_JAVA_POLICY_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-plugin-registration",
+    "title": "厂商插件登记与清单元数据",
+    "command": "n=0; for f in /usr/data/bundlecache/bundle*/bundle.info /usr/data/osgi/bundlecache/bundle*/bundle.info /usr/data/felix-cache/bundle*/bundle.info /usr/local/osgi/local/osgi/felix/felix-cache/bundle*/bundle.info /usr/local/osgi/local/osgi/felix/cache/bundle*/bundle.info; do [ -f \"$f\" ] || continue; n=$((n+1)); if [ \"$n\" -gt 48 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"FILE $f\"; awk '/^file:\\/[A-Za-z0-9_\\/.:-]+$/ || /^[0-9]+$/ {print; n++; if(n==8) exit}' \"$f\"; done; echo VENDOR_PLUGIN_REGISTRATION_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-startup-files",
+    "title": "厂商启动脚本与基础启动指纹",
+    "command": "for f in /bin/skyage.sh /sbin/skyage.sh /usr/bin/skyage.sh /usr/sbin/skyage.sh /etc/skyage.sh /etc/default/S01userconfig /etc/init.d/rcS /etc/inittab; do if [ -f \"$f\" ]; then echo \"FILE $f\"; ls -ln \"$f\"; sha256sum \"$f\" 2>/dev/null; case \"$f\" in */skyage.sh) sed -n '1,200p' \"$f\";; esac; fi; done; echo VENDOR_STARTUP_FILES_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "vendor-tool-paths",
+    "title": "厂商服务工具与权限工具可用性",
+    "command": "for t in sendcmd getid getcap setcap stat cmp unzip jar crond crontab start-stop-daemon; do echo \"TOOL $t\"; which \"$t\" 2>/dev/null || :; done; for f in /bin/osgid /usr/local/osgi/local/j2re/bin/java /usr/local/osgi/local/osgi/felix/bin/felix.jar /usr/local/osgi/local/j2re/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; ls -ln \"$f\"; sha256sum \"$f\" 2>/dev/null; fi; done; echo VENDOR_TOOL_PATHS_DONE",
+    "outputLimitChars": 65536,
+    "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
   }
 ]

@@ -5,7 +5,7 @@ Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $script:root=$PSScriptRoot;$script:work=$null;$script:resultDirectory=''
 $script:form=New-Object Windows.Forms.Form
-$script:form.Text='中兴光猫 · 只读兼容性检测 v0.6.1'
+$script:form.Text='光猫 · 只读兼容性检测 v0.7.0'
 $script:form.ClientSize=New-Object Drawing.Size(820,730)
 $script:form.MinimumSize=New-Object Drawing.Size(840,770)
 $script:form.StartPosition='CenterScreen'
@@ -20,7 +20,7 @@ function Input([string]$Text,[int]$X,[int]$Y,[int]$W){
 function Button([string]$Text,[int]$X,[int]$Y,[int]$W){
  $c=New-Object Windows.Forms.Button;$c.Text=$Text;$c.SetBounds($X,$Y,$W,38);$c.BackColor=[Drawing.Color]::White;$script:form.Controls.Add($c);return $c
 }
-$title=Label '中兴光猫 · 只读适配检测' 24 20 760 38
+$title=Label '光猫 · 只读适配检测' 24 20 760 38
 $title.Font=New-Object Drawing.Font('Microsoft YaHei UI',18,[Drawing.FontStyle]::Bold)
 $null=Label "多型号适配资料采集 · 不安装 UU、不上传脚本、不修改光猫、不重启服务。" 24 66 770 28
 $null=Label '光猫 IP 地址' 24 111 115 25;$address=Input '192.168.1.1' 145 108 225
