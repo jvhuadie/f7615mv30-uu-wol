@@ -34,6 +34,19 @@
 
 Windows 需 PowerShell 5.1 / .NET Framework，无需 Python、SDK 或 Windows 管理员权限。Telnet 不加密，请在可信局域网使用。
 
+## 光猫端安装与数据目录
+
+| 型号 | 安装及管理文件目录 | UU 运行程序、配置与绑定目录 |
+|---|---|---|
+| F7615MV30 | `/usr/plugin/uu-wol-f7615/` | `/usr/plugin/uu-wol-f7615/files/` |
+| F7005MV3 | `/usr/plugin/uu-wol-f7005/` | `/usr/plugin/bundlecache/bundle编号/data/` |
+| G7615V2 | CU 框架内 `/opt/uu-wol-g7615/` | 同一目录 |
+| 创维 SK-D847N | `/usr/data/uu-wol-skd847n/` | `/usr/data/o_ins/felix-cache/bundle编号/data/` |
+
+F7005 与创维的 `bundle编号` 由原厂 OSGi 框架动态分配，重新安装后可能变化，不能写死编号；应按本项目 `service.jar` 的插件登记定位对应数据目录。绑定文件主要为 `.sn`、`.uuplugin_uuid` 和 `uu.conf`，位于表中的运行数据目录，请勿公开分享。
+
+G7615 的路径属于 **CU 框架内部**。从宿主 Telnet 可通过 `/proc/CU框架进程PID/root/opt/uu-wol-g7615/` 访问，其中 PID 需按当前框架进程替换；已验证参考固件的持久文件落在宿主 `/opt/cu/apps/apps/opt/uu-wol-g7615/`。其他型号的路径直接在宿主使用。启停、恢复和卸载请通过工具操作，避免直接删除目录导致插件登记或权限残留。
+
 ## 服务管理与恢复
 
 | 操作 | F7615MV30 / G7615V2 | F7005MV3 | 创维 SK-D847N |
