@@ -1,6 +1,6 @@
-# 光猫只读检测工具 v0.7.0
+# 光猫只读检测工具 v0.7.1
 
-v0.7.0 已提供本地构建，本轮尚未发布新的 GitHub Release；[当前公开检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.6.1) · [使用说明](INSTALL.txt) · [提交适配资料](https://share.fnnas.net/s/a6cea4a86c714bdf87)
+v0.7.1 已提供本地构建，本轮尚未发布新的 GitHub Release；[当前公开检测工具](https://github.com/jvhuadie/zte-ont-uu-wol/releases/tag/probe-v0.6.1) · [使用说明](INSTALL.txt) · [提交适配资料](https://share.fnnas.net/s/a6cea4a86c714bdf87)
 
 独立 Windows 单文件 EXE，用于收集中兴光猫不同型号、固件的适配资料。需要已有 Telnet 权限；不负责解锁或开启 Telnet。Windows 需 PowerShell 5.1 / .NET Framework，无需 Python、SDK 或管理员运行。
 
@@ -16,7 +16,7 @@ v0.7.0 已提供本地构建，本轮尚未发布新的 GitHub Release；[当前
 
 ## 采集范围与边界
 
-共 56 个固定只读分组，覆盖身份/发行版本、CPU/内存、运行库与加载器、固定程序 ELF 头、工具/BusyBox applet、分区挂载、常见 init、Java/OSGi、CU/UPT、SAF 位置、应用目录、用户态进程权限与命名空间、容器启动文件元数据、LXC 属性白名单、网络接口/策略默认路由及 DNS 配置存在性。
+共 60 个固定只读分组，覆盖身份/发行版本、CPU/内存、运行库与加载器、固定程序 ELF 头、工具/BusyBox applet、分区挂载、常见 init、Java/OSGi、CU/UPT、SAF 位置、应用目录、用户态进程权限与命名空间、容器启动文件元数据、LXC 属性白名单、网络接口/策略默认路由及 DNS 配置存在性。
 
 不安装 UU、不上传脚本、不写光猫文件、不改自启、不停止服务或重启。不进入容器或执行 saf console，不尝试控制台密码，不发起外网测试。自定义 rc.local/run.sh 仅看元数据，不读取内容；不读取账号数据库、UU 绑定文件、进程命令行或环境变量，不导出完整程序、文件系统或固件原始内容。
 
@@ -35,10 +35,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools/ont-readonly/tools/bui
 python tools/ont-readonly/tests/test_collect.py
 $env:PROBE_BUSYBOX = 'C:\path\to\busybox.exe'
 python tools/ont-readonly/tests/test_boot_hints.py
-python tools/ont-readonly/tests/test_single_exe.py --exe tools/ont-readonly/dist/ZTE-ONT-readonly-v0.7.0.exe
+python tools/ont-readonly/tests/test_single_exe.py --exe tools/ont-readonly/dist/ZTE-ONT-readonly-v0.7.1.exe
 ```
 
-Python 与 BusyBox 仅供开发测试；EXE 内嵌运行资源并逐项核对 SHA-256，正常退出清理本实例临时目录。普通采集共 23 项离线/模拟测试及窗口核对；56 项扩展采集尚未完成实机验收。
+Python 与 BusyBox 仅供开发测试；EXE 内嵌运行资源并逐项核对 SHA-256，正常退出清理本实例临时目录。普通采集共 25 项离线/模拟测试及窗口核对；60 项扩展采集尚未完成实机验收。
 
-新增创维及通用厂商 OSGi 采集：/usr/local/osgi 与 /usr/data 候选目录、Felix 存储和自动加载字段、Java 原生执行权限白名单、插件登记元数据、skyage.sh 启动线索及缺命令检查。共 56 组。
+新增创维及通用厂商 OSGi 采集：/usr/local/osgi 与 /usr/data 候选目录、Felix 存储和自动加载字段、Java 原生执行权限白名单、插件登记元数据、skyage.sh 启动线索及缺命令检查。共 60 组。
 不执行 getid/sendcmd/skyage.sh，不安装插件或更改权限，不导出完整配置。请在型号备注填写机身型号，例如 SK-D847N；skyworth 主机名不能确认具体型号。
+
+v0.7.1 补充：只读解析 Felix 配置中的持久缓存根目录，拒绝包含点点的路径；采集缓存登记、自动加载续行、策略授权范围标记和 Java 监听端口，不连接管理端口或执行插件操作。

@@ -366,7 +366,7 @@
   {
     "id": "vendor-java-policy",
     "title": "厂商 Java 原生执行权限白名单",
-    "command": "for f in /usr/local/osgi/local/j2re/lib/security/private.policy /usr/local/osgi/local/j2re/lib/security/java.policy /usr/java/jre/lib/security/java.policy /usr/java/jre/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*permission[ \\t]+java[.]security[.]AllPermission/ || /^[ \\t]*permission[ \\t]+java[.]lang[.]RuntimePermission[ \\t]+\"(loadLibrary[.][A-Za-z0-9_*.-]+|manageProcess|modifyThread|modifyThreadGroup|readFileDescriptor|writeFileDescriptor)\"/ || /^[ \\t]*permission[ \\t]+java[.]io[.]FilePermission[ \\t]+\"(..ALL FILES..|\\/(usr\\/data|usr\\/local\\/osgi|usr\\/plugin|tmp|var)[A-Za-z0-9_\\/*.-]*)\"/ {sub(/[ \\t]*\\/\\/.*$/, \"\"); print; n++; if(n==120) exit}' \"$f\"; fi; done; echo VENDOR_JAVA_POLICY_DONE",
+    "command": "for f in /usr/local/osgi/local/osgi/felix/security.policy /usr/local/osgi/local/j2re/lib/security/private.policy /usr/local/osgi/local/j2re/lib/security/java.policy /usr/java/jre/lib/security/java.policy /usr/java/jre/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; sha256sum \"$f\" 2>/dev/null; awk '/^[ \\t]*grant[ \\t]*[{][ \\t\\r]*$/ {print \"POLICY_GRANT_SCOPE=GLOBAL\"} /^[ \\t]*grant[ \\t]+code[Bb]ase/ {print \"POLICY_GRANT_SCOPE=CODEBASE_RESTRICTED\"} /^[ \\t]*permission[ \\t]+java[.]security[.]AllPermission/ || /^[ \\t]*permission[ \\t]+java[.]lang[.]RuntimePermission[ \\t]+\"(loadLibrary[.][A-Za-z0-9_*.-]+|manageProcess|modifyThread|modifyThreadGroup|readFileDescriptor|writeFileDescriptor)\"/ || /^[ \\t]*permission[ \\t]+java[.]io[.]FilePermission[ \\t]+\"(..ALL FILES..|\\/(usr\\/data|usr\\/local\\/osgi|usr\\/plugin|tmp|var)[A-Za-z0-9_\\/*.-]*)\"/ {sub(/[ \\t]*\\/\\/.*$/, \"\"); print; n++; if(n==120) exit}' \"$f\"; fi; done; echo VENDOR_JAVA_POLICY_DONE",
     "outputLimitChars": 65536,
     "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
   },
@@ -390,5 +390,33 @@
     "command": "for t in sendcmd getid getcap setcap stat cmp unzip jar crond crontab start-stop-daemon; do echo \"TOOL $t\"; which \"$t\" 2>/dev/null || :; done; for f in /bin/osgid /usr/local/osgi/local/j2re/bin/java /usr/local/osgi/local/osgi/felix/bin/felix.jar /usr/local/osgi/local/j2re/lib/security/private.policy; do if [ -f \"$f\" ]; then echo \"FILE $f\"; ls -ln \"$f\"; sha256sum \"$f\" 2>/dev/null; fi; done; echo VENDOR_TOOL_PATHS_DONE",
     "outputLimitChars": 65536,
     "scope": "固定厂商候选路径；目录、登记、脚本与权限输出有边界；配置按字段白名单，未命中不证明不存在"
+  },
+  {
+    "id": "osgi-cache-root-layout",
+    "title": "Felix 配置指向的缓存根目录",
+    "command": "for c in /usr/local/osgi/local/osgi/felix/conf/config.properties /usr/java/conf/config.properties; do [ -f \"$c\" ] || continue; r=$(awk -F= '/^[ \\t]*felix[.]cache[.]rootdir[ \\t]*=/ {v=$2; gsub(/^[ \\t]+|[ \\t\\r]+$/, \"\", v); if(v ~ /^\\/usr\\/(data|plugin)\\/[A-Za-z0-9_\\/.-]+$/) print v; exit}' \"$c\"); case \"$r\" in ''|*..*) continue;; esac; echo \"CACHE_ROOT $r\"; n=0; for f in \"$r\" \"$r/felix-cache\" \"$r\"/* \"$r/felix-cache\"/*; do [ -d \"$f\" ] || continue; n=$((n+1)); if [ \"$n\" -eq 30 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"DIR $f\"; ls -lan \"$f\" 2>&1 | sed -n '1,45p'; done; done; echo OSGI_CACHE_LAYOUT_DONE",
+    "outputLimitChars": 65536,
+    "scope": "只读解析固定 Felix 配置中的 /usr/data 或 /usr/plugin 根路径；拒绝点点路径，缓存目录和登记条目有数量边界；不执行配置"
+  },
+  {
+    "id": "osgi-resolved-registration",
+    "title": "Felix 解析缓存中的插件登记",
+    "command": "for c in /usr/local/osgi/local/osgi/felix/conf/config.properties /usr/java/conf/config.properties; do [ -f \"$c\" ] || continue; r=$(awk -F= '/^[ \\t]*felix[.]cache[.]rootdir[ \\t]*=/ {v=$2; gsub(/^[ \\t]+|[ \\t\\r]+$/, \"\", v); if(v ~ /^\\/usr\\/(data|plugin)\\/[A-Za-z0-9_\\/.-]+$/) print v; exit}' \"$c\"); case \"$r\" in ''|*..*) continue;; esac; n=0; for f in \"$r\"/felix-cache/bundle*/bundle.info \"$r\"/bundle*/bundle.info; do [ -f \"$f\" ] || continue; n=$((n+1)); if [ \"$n\" -gt 48 ]; then echo ENTRY_LIMIT_REACHED; break; fi; echo \"FILE $f\"; awk '/^file:\\/[A-Za-z0-9_\\/.:-]+$/ || /^[0-9]+$/ {print; n++; if(n==8) exit}' \"$f\"; done; done; echo OSGI_RESOLVED_REGISTRATION_DONE",
+    "outputLimitChars": 65536,
+    "scope": "只读解析固定 Felix 配置中的 /usr/data 或 /usr/plugin 根路径；拒绝点点路径，缓存目录和登记条目有数量边界；不执行配置"
+  },
+  {
+    "id": "osgi-autostart-continuations",
+    "title": "Felix 自动加载续行与控制台字段白名单",
+    "command": "for f in /usr/local/osgi/local/osgi/felix/conf/config.properties /usr/local/osgi/local/felix.properties /usr/java/conf/config.properties; do [ -f \"$f\" ] || continue; echo \"FILE $f\"; awk '/^[ \\t]*(felix[.]auto[.](start|install)([.][0-9]+)?|osgi[.]console|gosh[.]args|osgi[.]shell[.]telnet[.](port|ip|maxconn)|felix[.]shell[.]telnet[.](port|ip|maxconn))[ \\t]*[:=]/ {print; n++; active=($0 ~ /\\\\[ \\t\\r]*$/); next} active {if($0 ~ /^[ \\t]*file:\\/[A-Za-z0-9_\\/.: -]+\\\\?[ \\t\\r]*$/) {print; n++}; active=($0 ~ /\\\\[ \\t\\r]*$/); if(n==100) exit}' \"$f\"; done; echo OSGI_AUTOSTART_CONTINUATIONS_DONE",
+    "outputLimitChars": 65536,
+    "scope": "只读解析固定 Felix 配置中的 /usr/data 或 /usr/plugin 根路径；拒绝点点路径，缓存目录和登记条目有数量边界；不执行配置"
+  },
+  {
+    "id": "java-service-listeners",
+    "title": "Java 与插件框架的监听端口",
+    "command": "netstat -lntp 2>/dev/null | grep -E '(^Proto|java|osgid|felix)' | sed -n '1,60p'; echo JAVA_LISTENERS_DONE",
+    "outputLimitChars": 65536,
+    "scope": "只读解析固定 Felix 配置中的 /usr/data 或 /usr/plugin 根路径；拒绝点点路径，缓存目录和登记条目有数量边界；不执行配置"
   }
 ]

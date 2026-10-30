@@ -48,5 +48,15 @@ class HintsTests(unittest.TestCase):
   out=self.run_fixture('vendor-java-policy',data,['/usr/local/osgi/local/j2re/lib/security/private.policy'])
   self.assertIn('java.security.AllPermission',out);self.assertIn('"/usr/data/-"',out)
   self.assertIn('loadLibrary.*',out);self.assertNotIn('PRIVATE',out)
+ def test_cache_root_is_resolved_and_parent_paths_are_rejected(self):
+  paths=['/usr/local/osgi/local/osgi/felix/conf/config.properties','/usr/java/conf/config.properties']
+  out=self.run_fixture('osgi-cache-root-layout',b'felix.cache.rootdir=/usr/data/o_ins\n',paths)
+  self.assertIn('CACHE_ROOT /usr/data/o_ins',out)
+  out=self.run_fixture('osgi-cache-root-layout',b'felix.cache.rootdir=/usr/data/../../etc\n',paths)
+  self.assertNotIn('CACHE_ROOT ',out)
+ def test_auto_start_continuations_do_not_export_unrelated_fields(self):
+  data=b'felix.auto.start.1= \\\n file:/usr/local/osgi/a.jar \\\n file:/usr/local/osgi/b.jar\npassword=PRIVATE\n'
+  out=self.run_fixture('osgi-autostart-continuations',data,['/usr/local/osgi/local/osgi/felix/conf/config.properties'])
+  self.assertIn('a.jar',out);self.assertIn('b.jar',out);self.assertNotIn('PRIVATE',out)
 
 if __name__=='__main__':unittest.main()
